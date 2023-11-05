@@ -13,3 +13,12 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 end
+
+
+def connection
+ SolrCloud::Connection.new(url: ENV["SOLR_URL"], user: ENV["SOLR_USER"], password: ENV["SOLR_PASSWORD"])
+end
+
+def test_conf_dir
+  "spec/data/simple_configuration/conf"
+end
