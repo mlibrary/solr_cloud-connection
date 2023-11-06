@@ -88,8 +88,8 @@ RSpec.describe SolrCloud::Connection do
       @solr.delete_collection(@collectionname)
     end
 
-    it "can ping a collection" do
-      expect(@coll.ping?)
+    it "can ping a collection to see if it's alive" do
+      expect(@coll.alive?)
     end
   end
 end

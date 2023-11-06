@@ -7,6 +7,7 @@ require "logger"
 require_relative "connection/version"
 require_relative "connection/configset_admin"
 require_relative "connection/collection_admin"
+require_relative "connection/alias_admin"
 require_relative "connection/collection"
 require_relative "connection/errors"
 
@@ -15,6 +16,7 @@ module SolrCloud
 
     include ConfigsetAdmin
     include CollectionAdmin
+    include AliasAdmin
 
     attr_reader :url, :logger, :raw_connection
 

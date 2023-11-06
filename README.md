@@ -24,7 +24,7 @@ connection.create_configset(name: "myconfig", confdir: "/path/to/yourconfig/conf
 connection.create_configset(name: "myconfig", confdir: "/path/to/yourconfig/conf", force: true)
 
 
-# Collections can be grabbed by name
+# Collections can be grabbed by name, or created if they don't already exist
 collection = if connection.collection? "mycoll"
                connection.collection "mycoll"
              else  
@@ -40,6 +40,8 @@ connection.delete_collection("nosuchcollection")
 
 # Working with an individual collection
 collection = connection.collection("mycoll") #=> Collection object for "mycoll"
+collection.alive? #=> true
+
 collection.aliases #=> []
 myalias = collection.create_alias("myalias") # there's no functional difference between a collection and alias
 # or

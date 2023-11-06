@@ -11,16 +11,11 @@ module SolrCloud
       # @param [String] name The name of the (already existing) collection
       # @param [SolrCloud::Connection] connection Connection to the solr "root" (http://blah:8888/)
       def initialize(name:, connection:)
-        raise NoSuchCollectionError.new("No collection #{name}") unless connection.collection?(name)
+        # raise NoSuchCollectionError.new("No collection #{name}") unless connection.collection?(name)
         @connection = connection.dup
         @name = name
+        @sp = "/solr/#{name}"
         super(@connection)
-      end
-
-      # Send a bunch of stuff to the connection's admin methods
-      # @return [Boolean] does this collection still exist
-      def exist?
-        connection.collection?(name)
       end
 
       # Delete this collection. Unlike the #delete_collection call on a Connection object,
@@ -33,23 +28,73 @@ module SolrCloud
         connection
       end
 
-      def getsac(path = nil, *args, **kwargs)
-        fullpath = if path.nil? or path == ""
-                     "solr/admin/collections"
-                   else
-                     "solr/admin/collections/#{path}"
-                   end
-        get fullpath, *args, **kwargs
-      end
-
-      def ping?
-        get("solr/c/admin/ping").body["status"]
+      # Check to see if the collection is alive
+      # @return [Boolean]
+      def alive?
+        get("solr/#{name}/admin/ping").body["status"]
       rescue Faraday::ResourceNotFound => e
         false
       end
 
-      def reload
+      alias_method :exist?, :alive?
 
+      # Is this an alias?
+      # Putting this in here breaks all sorts of isolation principles,
+      # but being able to call #alias? on anything collection-like is
+      # convenient
+      def alias?
+        false
+      end
+
+      # A (possibly empty) list of aliases targeting this collection
+      # @return [Array<Alias>] list of aliases
+      def aliases
+        connection.aliases.select { |x| x.last == name }.map{ |aname| Alias.new(name: aname, connection: connection) }
+      end
+
+      def alias_as(name)
+
+      end
+
+      # Index a document or array of documents
+      # @todo add error checking if this gets used for anything real
+      def index(docs, commit: true)
+        _raw_index(docs)
+        self.commit if commit
+        self
+      end
+
+      # Send a commit (soft if unspecified)
+      # @return self
+      def commit(hard: false)
+        if hard
+          get_update(commit: true)
+        else
+          get_update(nil, softCommit: true)
+        end
+        self
+      end
+
+      # Builder to get at various request handlers,
+      # since the solr API is...inconsistent...in places.
+      def get_with_prefix(prefix, path = "", *args, **kwargs)
+        fullpath = if path.nil? or path == ""
+                     prefix
+                   else
+                     "#{prefix}/#{path}"
+                   end
+        get fullpath, *args, **kwargs
+      end
+
+      def get_update(path = "", *args, **kwargs)
+        get_with_prefix("solr/#{name}/update", path, *args, **kwargs)
+      end
+
+
+
+      def _raw_index(docs)
+        d = docs.kind_of?(Array) ? docs : [docs]
+        post("solr/#{name}/update/json", d)
       end
 
     end
