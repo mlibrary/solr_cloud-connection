@@ -8,18 +8,24 @@ require_relative "connection/version"
 require_relative "connection/configset_admin"
 require_relative "connection/collection_admin"
 require_relative "connection/alias_admin"
-require_relative "connection/collection"
-require_relative "connection/alias"
-require_relative "connection/errors"
+require_relative "collection"
+require_relative "alias"
+require_relative "errors"
+
+require "forwardable"
 
 module SolrCloud
-  class Connection < SimpleDelegator
+  class Connection
+
+    extend Forwardable
 
     include ConfigsetAdmin
     include CollectionAdmin
     include AliasAdmin
 
     attr_reader :url, :logger, :raw_connection
+
+    def_delegators :@raw_connection, :get, :post, :delete, :put
 
     # Create a new connection to talk to solr
     # @param url [String] URL to the "root" of the solr installation. For a default solr setup, this will
@@ -34,15 +40,14 @@ module SolrCloud
       @user = user
       @password = password
       @logger = case logger
-                  when :off
-                    Logger.new(:unknown)
+                  when :off, :none
+                    Logger.new(File::NULL, level: Logger::FATAL)
                   when nil
-                    Logger.new($stderr, level: :warn)
+                    Logger.new($stderr, level: Logger::WARN)
                   else
                     logger
                 end
       @raw_connection = create_raw_connection(url: url, adapter: adapter, user: user, password: password, logger: @logger)
-      __setobj__(@raw_connection)
       bail_if_incompatible!
       @logger.info("Connected to supported solr at #{url}")
     end
@@ -50,8 +55,10 @@ module SolrCloud
     # Pass in your own faraday connection
     # @param faraday_connection [Faraday::Connection] A pre-build faraday connection object
     def self.new_from_faraday(faraday_connection)
-      @raw_connection = faraday_connection
-      @url = faraday_connection.build_url
+      c = self.allocate
+      c.instance_variable_set(:@raw_connection, faraday_connection)
+      c.instance_variable_set(:@url, faraday_connection.build_url.to_s)
+      c
     end
 
     # Create a Faraday connection object to base the API client off of
@@ -73,6 +80,10 @@ module SolrCloud
       end
     end
 
+    # Allow accessing the raw_connection via "connection". Yes, connection.connection
+    # can be confusing, but it makes the *_admin stuff easier to read.
+    alias_method :connection, :raw_connection
+
     # Check to see if we can actually talk to the solr in question
     # raise [UnsupportedSolr] if the solr version isn't at least 8
     # raise [ConnectionFailed] if we can't connect for some reason
@@ -87,9 +98,8 @@ module SolrCloud
     # @raise [Unauthorized] if the server gives a 401
     # @return [Hash] The response from the info call
     def system
-      return @system if @system
       resp = get("/solr/admin/info/system")
-      @system = resp.body
+      resp.body
     rescue Faraday::UnauthorizedError
       raise Unauthorized.new("Server reports failed authorization")
     end
@@ -131,7 +141,7 @@ module SolrCloud
     end
 
     def inspect
-      "<SolrCloud::Connection #{@url}>"
+      "<#{self.class} #{@url}>"
     end
 
     alias_method :to_s, :inspect

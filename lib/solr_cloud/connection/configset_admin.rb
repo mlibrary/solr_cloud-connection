@@ -9,7 +9,7 @@ module SolrCloud
       # Get a list of the already-defined configSets
       # @return [Array<String>] possibly empty list of configSets
       def configsets
-        get("api/cluster/configs").body["configSets"]
+        connection.get("api/cluster/configs").body["configSets"]
       end
 
       alias_method :configurations, :configsets
@@ -32,13 +32,13 @@ module SolrCloud
       # @return [String] the name of the configset created
       def create_configset(name:, confdir:, force: false, version: "")
         config_set_name = name + version.to_s
-        if configset?(config_set_name) && force == false
+        if configset?(config_set_name) && !force
           raise WontOverwriteError.new("Won't replace configset #{config_set_name} unless 'force: true' passed ")
         end
         zfile = "#{Dir.tmpdir}/solr_add_configset_#{name}_#{Time.now.hash}.zip"
         z = ZipFileGenerator.new(confdir, zfile)
         z.write
-        resp = self.put("api/cluster/configs/#{config_set_name}") do |req|
+        resp = @raw_connection.put("api/cluster/configs/#{config_set_name}") do |req|
           req.body = File.binread(zfile)
         end
         # TODO: Error check in here somewhere
@@ -53,7 +53,7 @@ module SolrCloud
       # @return [Connection] self
       def delete_configset(name)
         if configset? name
-          delete("api/cluster/configs/#{name}")
+          connection.delete("api/cluster/configs/#{name}")
         end
         self
       rescue Faraday::BadRequestError => e

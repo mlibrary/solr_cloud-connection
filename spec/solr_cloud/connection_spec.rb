@@ -1,21 +1,54 @@
 # frozen_string_literal: true
 
-
 RSpec.describe SolrCloud::Connection do
-  it "has a version number" do
-    expect(SolrCloud::Connection::VERSION).not_to be nil
-  end
 
   before(:all) do
-    unless %w[SOLR_URL SOLR_USER SOLR_PASSWORD].all?{|e| ENV[e] }
-      raise "Must defined SOLR_URL, SOLR_USER, and SOLR_PASSWORD as env variables"
-    end
+    verify_test_environment!
+    cleanout!
     @solr = connection
     @confname = "config_tests" + Random.rand(999).to_s
     @collection_name = "collection_tests" + Random.rand(999).to_s
   end
 
-  # TODO test create confiset won't overrite without force
+  it "has a version number" do
+    expect(SolrCloud::Connection::VERSION).not_to be nil
+  end
+
+  describe "creating" do
+    describe "logger" do
+      it "gets a standard logger" do
+        c = SolrCloud::Connection.new(url: test_url, user: test_user, password: test_password)
+        expect(c.logger.level).to eq(Logger::WARN)
+      end
+
+      it "gets a null logger on :off" do
+        c = SolrCloud::Connection.new(url: test_url, logger: :off, user: test_user, password: test_password)
+        expect(c.logger.level).to eq(Logger::FATAL)
+      end
+
+      it "will take a given logger" do
+        c = SolrCloud::Connection.new(url: test_url, logger: Logger.new($stderr, level: Logger::DEBUG), user: test_user, password: test_password)
+        expect(c.logger.level).to eq(Logger::DEBUG)
+      end
+    end
+
+    it "can build from existing faraday connection" do
+      f = Faraday.new(url: test_url) do |faraday|
+        faraday.request :authorization, :basic, test_user, test_password
+      end
+      s = SolrCloud::Connection.new_from_faraday(f)
+      expect(s.url).to eq(test_url)
+    end
+
+    it "will report a failure to connect" do
+      expect {SolrCloud::Connection.new(url: "http://localhost:9090911") }.to raise_error(SolrCloud::ConnectionFailed)
+    end
+
+    it "will report a failure to authorize" do
+      expect {SolrCloud::Connection.new(url: test_url)}.to raise_error(SolrCloud::Unauthorized)
+    end
+  end
+
   describe "config sets" do
     it "can get list of configsets" do
       expect(@solr.configurations).to be_a(Array)
@@ -27,44 +60,21 @@ RSpec.describe SolrCloud::Connection do
       @solr.delete_configset(@confname)
       expect(@solr.configurations).not_to include(@confname)
     end
-  end
 
-  describe "collection create/delete" do
-    before(:each) do
-      @confname = "config_tests" + Random.rand(999).to_s
-      @collection_name = "collection_tests" + Random.rand(999).to_s
-      @solr = connection
-      @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true)
-    end
-
-    after(:each) do
+    it "won't overwrite existing configset without force: true" do
+      @solr.create_configset(name: @confname, confdir: test_conf_dir)
+      expect { @solr.create_configset(name: @confname, confdir: test_conf_dir) }.to raise_error(SolrCloud::WontOverwriteError)
       @solr.delete_configset(@confname)
     end
 
-    it "can create/delete a collection" do
-      @solr.create_collection(name: @collection_name, configset: @confname)
-      expect(@solr.collection?(@collection_name))
-      @solr.delete_collection(@collection_name)
-      expect(@solr.collection?(@collection_name)).to be_falsey
+    it "will overwrite existing configset by using force: true" do
+      @solr.create_configset(name: @confname, confdir: test_conf_dir)
+      expect { @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true) }.not_to raise_error
+      @solr.delete_configset(@confname)
     end
 
-    it "throws an error if you try to create a collection with a bad configset" do
-      expect {
-        @solr.create_collection(name: @collection_name, configset: "INVALID")
-      }.to raise_error(SolrCloud::NoSuchConfigSetError)
-    end
-
-    it "throws an error if you try to get admin for a non-existant collection" do
-      expect { @solr.collection("INVALID_COLLECTION_NAME") }.to raise_error(SolrCloud::NoSuchCollectionError)
-    end
-
-    it "won't allow you to drop a configset in use" do
-      @solr.create_configset(name:  @confname, confdir: test_conf_dir, force: true)
-      @solr.create_collection(name: @collection_name, configset: @confname)
-      expect { @solr.delete_configset @confname }.to raise_error(SolrCloud::ConfigSetInUseError)
-      @solr.delete_collection(@collection_name)
-    end
   end
+
 
   describe "individual collections" do
     before(:all) do

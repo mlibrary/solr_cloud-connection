@@ -7,7 +7,7 @@ module SolrCloud
       # Get a list of the already-defined collections
       # @return [Array<String>] possibly empty list of collection names
       def collections
-        get("api/collections").body["collections"]
+        connection.get("api/collections").body["collections"]
       end
 
       # @param name [String] name of the collection to check on
@@ -35,7 +35,7 @@ module SolrCloud
           :replicationFactor => replication_factor,
           "collection.configName" => configset
         }
-        resp = get("solr/admin/collections", args)
+        resp = connection.get("solr/admin/collections", args)
         collection(name)
       end
 
@@ -45,7 +45,7 @@ module SolrCloud
       # @return [Connection] self
       def delete_collection(name)
         if collection? name
-          get("solr/admin/collections", { action: "DELETE", name: name })
+          connection.get("solr/admin/collections", { action: "DELETE", name: name })
         end
         self
       end
