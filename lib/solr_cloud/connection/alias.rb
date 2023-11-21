@@ -11,11 +11,28 @@ module SolrCloud
 
       def collection
         return @collection if @collection
-        collection_name = connection.aliases.first { |x| x.first == name }.first
-        Collection.new(name: collection_name, connection: connection)
+        @collection = collection_for_alias(name)
       end
 
+      def collection=(collection)
+        case collection
+          when String
+            raise NoSuchCollectionError unless collection?(collection)
+            @collection = @connection.collection(collection)
+          when Collection
+            raise NoSuchCollectionError unless collection?(collection.name)
+            @collection = Collection.new(name: collection, connection: @connection)
+          else
+            raise "Alias#collection= takes a name string or a Collection object"
+        end
+        connection.create_alias(name: name, collection_name: collection, force: true)
+        @collection
+      end
 
+      def inspect
+        "<SolrCloud::Connection::Alias '#{name}' (alias of '#{collection.name}')>"
+      end
+      alias_method :to_s, :inspect
 
     end
   end

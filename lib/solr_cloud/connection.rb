@@ -9,6 +9,7 @@ require_relative "connection/configset_admin"
 require_relative "connection/collection_admin"
 require_relative "connection/alias_admin"
 require_relative "connection/collection"
+require_relative "connection/alias"
 require_relative "connection/errors"
 
 module SolrCloud
@@ -128,6 +129,12 @@ module SolrCloud
     def patch_version
       _version_part_int(2)
     end
+
+    def inspect
+      "<SolrCloud::Connection #{@url}>"
+    end
+
+    alias_method :to_s, :inspect
 
   end
 end

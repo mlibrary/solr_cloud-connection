@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "solr_cloud/connection"
+require "dotenv"
+Dotenv.load! ".env.local"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

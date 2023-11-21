@@ -12,7 +12,7 @@ RSpec.describe SolrCloud::Connection do
     end
     @solr = connection
     @confname = "config_tests" + Random.rand(999).to_s
-    @collectionname = "collection_tests" + Random.rand(999).to_s
+    @collection_name = "collection_tests" + Random.rand(999).to_s
   end
 
   # TODO test create confiset won't overrite without force
@@ -32,7 +32,7 @@ RSpec.describe SolrCloud::Connection do
   describe "collection create/delete" do
     before(:each) do
       @confname = "config_tests" + Random.rand(999).to_s
-      @collectionname = "collection_tests" + Random.rand(999).to_s
+      @collection_name = "collection_tests" + Random.rand(999).to_s
       @solr = connection
       @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true)
     end
@@ -42,15 +42,15 @@ RSpec.describe SolrCloud::Connection do
     end
 
     it "can create/delete a collection" do
-      @solr.create_collection(name: @collectionname, configset: @confname)
-      expect(@solr.collection?(@collectionname))
-      @solr.delete_collection(@collectionname)
-      expect(@solr.collection?(@collectionname)).to be_falsey
+      @solr.create_collection(name: @collection_name, configset: @confname)
+      expect(@solr.collection?(@collection_name))
+      @solr.delete_collection(@collection_name)
+      expect(@solr.collection?(@collection_name)).to be_falsey
     end
 
     it "throws an error if you try to create a collection with a bad configset" do
       expect {
-        @solr.create_collection(name: @collectionname, configset: "INVALID")
+        @solr.create_collection(name: @collection_name, configset: "INVALID")
       }.to raise_error(SolrCloud::NoSuchConfigSetError)
     end
 
@@ -60,18 +60,18 @@ RSpec.describe SolrCloud::Connection do
 
     it "won't allow you to drop a configset in use" do
       @solr.create_configset(name:  @confname, confdir: test_conf_dir, force: true)
-      @solr.create_collection(name: @collectionname, configset: @confname)
+      @solr.create_collection(name: @collection_name, configset: @confname)
       expect { @solr.delete_configset @confname }.to raise_error(SolrCloud::ConfigSetInUseError)
-      @solr.delete_collection(@collectionname)
+      @solr.delete_collection(@collection_name)
     end
   end
 
   describe "individual collections" do
     before(:all) do
-      @collectionname = "test_collection"
+      @collection_name = "test_collection"
       @confname = "test_configuration"
       @solr = connection
-      @solr.delete_collection(@collectionname)
+      @solr.delete_collection(@collection_name)
       @solr.delete_configset(@confname)
       @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true)
     end
@@ -81,11 +81,11 @@ RSpec.describe SolrCloud::Connection do
     end
 
     before(:each) do
-      @coll = @solr.create_collection(name: @collectionname, configset: @confname)
+      @coll = @solr.create_collection(name: @collection_name, configset: @confname)
     end
 
     after(:each) do
-      @solr.delete_collection(@collectionname)
+      @solr.delete_collection(@collection_name)
     end
 
     it "can ping a collection to see if it's alive" do

@@ -49,11 +49,16 @@ module SolrCloud
       # A (possibly empty) list of aliases targeting this collection
       # @return [Array<Alias>] list of aliases
       def aliases
-        connection.aliases.select { |x| x.last == name }.map{ |aname| Alias.new(name: aname, connection: connection) }
+        alias_map = get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
+        alias_map.select { |a, c| c == name }.keys.map{ |aname| Alias.new(name: aname, connection: connection) }
+      end
+
+      def alias_names
+        aliases.map(&:name)
       end
 
       def alias_as(name)
-
+        raise "TODO"
       end
 
       # Index a document or array of documents
@@ -90,7 +95,16 @@ module SolrCloud
         get_with_prefix("solr/#{name}/update", path, *args, **kwargs)
       end
 
-
+      def inspect
+        anames = alias_names
+        astring = if anames.empty?
+                    ""
+                  else
+                    " (aliased by #{anames.map{|x| "'#{x}'"}.join(", ")})"
+                  end
+        "<SolrCloud::Connection::Collection '#{name}'#{astring}>"
+      end
+      alias_method :to_s, :inspect
 
       def _raw_index(docs)
         d = docs.kind_of?(Array) ? docs : [docs]

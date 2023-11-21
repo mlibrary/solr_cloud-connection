@@ -55,6 +55,7 @@ module SolrCloud
       # @return [SolrCloud::Connection::Collection] The collection connection
       # @raise [NoSuchCollectionError] if the collection doesn't exist
       def collection(collection_name)
+        raise NoSuchCollectionError.new("Collection '#{collection_name}' not found") unless collection?(collection_name)
         Collection.new(name: collection_name, connection: self)
       end
     end

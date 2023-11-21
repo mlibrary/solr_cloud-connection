@@ -2,8 +2,8 @@
 
 module SolrCloud
   class NoSuchCollectionError < ArgumentError; end
-
   class NoSuchConfigSetError < ArgumentError; end
+  class NoSuchAliasError < ArgumentError; end
 
   class WontOverwriteError < ArgumentError; end
 
