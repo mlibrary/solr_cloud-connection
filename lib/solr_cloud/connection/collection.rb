@@ -46,6 +46,16 @@ module SolrCloud
         false
       end
 
+      # Access to the root info from the api
+      def info
+        get("api/collections/#{name}").body["cluster"]["collections"][name]
+      end
+
+      # Reported as healthy?
+      def healthy?
+        info["health"] == "GREEN"
+      end
+
       # A (possibly empty) list of aliases targeting this collection
       # @return [Array<Alias>] list of aliases
       def aliases
@@ -105,6 +115,10 @@ module SolrCloud
         "<SolrCloud::Connection::Collection '#{name}'#{astring}>"
       end
       alias_method :to_s, :inspect
+
+      def pretty_print(q)
+        q.text inspect
+      end
 
       def _raw_index(docs)
         d = docs.kind_of?(Array) ? docs : [docs]

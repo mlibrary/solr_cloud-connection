@@ -136,5 +136,8 @@ module SolrCloud
 
     alias_method :to_s, :inspect
 
+    def pretty_print(q)
+      q.text inspect
+    end
   end
 end

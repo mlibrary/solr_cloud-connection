@@ -29,10 +29,19 @@ module SolrCloud
         @collection
       end
 
+      # Override info to talk to the underlying collection
+      def info
+        collection.info
+      end
+
       def inspect
         "<SolrCloud::Connection::Alias '#{name}' (alias of '#{collection.name}')>"
       end
       alias_method :to_s, :inspect
+
+      def pretty_print(q)
+        q.text inspect
+      end
 
     end
   end
