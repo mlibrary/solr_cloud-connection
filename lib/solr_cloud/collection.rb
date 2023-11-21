@@ -69,14 +69,6 @@ module SolrCloud
       connection.create_alias(name: alias_name, collection_name: name, force: true)
     end
 
-    # Index a document or array of documents
-    # @todo add error checking if this gets used for anything real
-    def index(docs, commit: true)
-      _raw_index(docs)
-      self.commit if commit
-      self
-    end
-
     # Send a commit (soft if unspecified)
     # @return self
     def commit(hard: false)
