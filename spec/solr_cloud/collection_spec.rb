@@ -95,7 +95,7 @@ RSpec.describe SolrCloud::Collection do
     it "can delete itself" do
       coll = @solr.create_collection(name: rnd_collname, configset: @confname)
       coll.delete!
-      expect(@solr.collections).not_to include(coll.name)
+      expect(@solr.collection_names).not_to include(coll.name)
       @solr.delete_collection(coll.name)
     end
 

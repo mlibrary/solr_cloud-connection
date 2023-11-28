@@ -52,16 +52,16 @@ end
 def cleanout!
   c = connection
 
-  c.aliases.select{|x| x=~ /\Aalias_test_/}.each do |a|
+  c.alias_names.select{|x| /\Aalias_test_/.match?(x) }.each do |a|
     c.delete_alias(a)
   end
 
-  c.collections.select{|x| x =~ /\Acollection_test_/}.each do |cs|
+  c.collection_names.select{|x| x =~ /\Acollection_test_/}.each do |cs|
     c.delete_collection(cs)
   end
 
-  c.configsets.select{|x| x =~ /\Aconfig_test_/}.each do |cs|
-    c.delete_configset(c)
+  c.configset_names.select{|x| /\Aconfig_test_/.match?(x)}.each do |cs|
+    c.delete_configset(cs)
   end
 end
 

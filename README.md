@@ -23,6 +23,8 @@ connection.create_configset(name: "myconfig", confdir: "/path/to/yourconfig/conf
 # ...but you can force it
 connection.create_configset(name: "myconfig", confdir: "/path/to/yourconfig/conf", force: true)
 
+# And then get it back
+connection.configsets #=> ["myconfig"]
 
 # Collections can be grabbed by name, or created if they don't already exist
 collection = if connection.collection? "mycoll"

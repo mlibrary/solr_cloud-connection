@@ -14,9 +14,9 @@ RSpec.describe SolrCloud::Alias do
 
   it "can create and delete an alias" do
     a = @solr.create_alias(name: rnd_aliasname, collection_name: @collection.name)
-    expect(@solr.aliases).to include(a.name)
+    expect(@solr.alias_names).to include(a.name)
     a.delete!
-    expect(@solr.aliases).not_to include(a.name)
+    expect(@solr.alias_names).not_to include(a.name)
   end
 
   it "identifies as an alias" do
@@ -31,7 +31,7 @@ RSpec.describe SolrCloud::Alias do
 
   it "errors if you try to crate an alias that already exists without force: true" do
     a = @solr.create_alias(name: rnd_aliasname, collection_name: @collection.name)
-    expect(@solr.aliases).to include(a.name)
+    expect(@solr.alias_names).to include(a.name)
     expect { @solr.create_alias(name: a.name, collection_name: @collection.name) }.to raise_error(SolrCloud::WontOverwriteError)
     expect(@solr.create_alias(name: a.name, collection_name: @collection.name, force: true).name).to eq(a.name)
     a.delete!

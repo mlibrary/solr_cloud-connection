@@ -12,6 +12,10 @@ module SolrCloud
         connection.get("api/cluster/configs").body["configSets"]
       end
 
+      def configset_names
+        connection.get("api/cluster/configs").body["configSets"]
+      end
+
       alias_method :configurations, :configsets
 
       # Check to see if a configset is defined

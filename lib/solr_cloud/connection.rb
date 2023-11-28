@@ -10,6 +10,7 @@ require_relative "connection/collection_admin"
 require_relative "connection/alias_admin"
 require_relative "collection"
 require_relative "alias"
+require_relative "configset"
 require_relative "errors"
 
 require "forwardable"

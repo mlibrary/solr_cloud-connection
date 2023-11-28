@@ -7,13 +7,17 @@ module SolrCloud
       # Get a list of the already-defined collections
       # @return [Array<String>] possibly empty list of collection names
       def collections
+        collection_names.map{|coll| collection(coll)}
+      end
+
+      def collection_names
         connection.get("api/collections").body["collections"]
       end
 
       # @param name [String] name of the collection to check on
       # @return [Boolean] Whether a collection with the passed name exists
       def collection?(name)
-        collections.include? name
+        collection_names.include? name
       end
 
       # Create a new collection

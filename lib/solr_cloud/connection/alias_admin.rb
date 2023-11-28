@@ -24,7 +24,7 @@ module SolrCloud
       end
 
       def alias?(name)
-        aliases.include? name
+        alias_names.include? name
       end
 
       # Delete the alias
@@ -45,6 +45,10 @@ module SolrCloud
       # List of alias names
       # @return [Array<String>] List of aliases
       def aliases
+        alias_map.values
+      end
+
+      def alias_names
         alias_map.keys
       end
 
