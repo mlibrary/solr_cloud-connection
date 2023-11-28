@@ -5,14 +5,24 @@ RSpec.describe SolrCloud::Collection do
   end
 
   describe "connection object can create/delete collections" do
-    before(:each) do
+    before(:all) do
       cleanout!
       @confname = rnd_configname
-      @collection_name = rnd_collname
       @solr = connection
       @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true)
     end
 
+    after(:all) do
+      @solr.delete_configset(@confname)
+    end
+
+    before(:each) do
+      @collection_name = rnd_collname
+    end
+
+    after(:each) do
+      @solr.delete_collection(@collection_name)
+    end
 
     it "can create/delete a collection" do
       @solr.create_collection(name: @collection_name, configset: @confname)
@@ -37,20 +47,25 @@ RSpec.describe SolrCloud::Collection do
     end
 
     it "won't allow you to drop a configset in use" do
-      @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true)
       @solr.create_collection(name: @collection_name, configset: @confname)
       expect { @solr.delete_configset @confname }.to raise_error(SolrCloud::ConfigSetInUseError)
-      @solr.delete_collection(@collection_name)
     end
   end
 
   describe "collection object itself can manipulate itself" do
 
-    before(:each) do |example|
+    before(:all) do
       cleanout!
-      conn = connection
-      config_name = conn.create_configset(name: rnd_configname, confdir: test_conf_dir, force: true)
-      @collection = conn.create_collection(name: rnd_collname, configset: config_name )
+      @confname = rnd_configname
+      @solr = connection
+      @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true)
+      @collection_name = rnd_collname
+      @collection = @solr.create_collection(name: @collection_name, configset: @confname)
+    end
+
+    after(:all) do
+      @solr.delete_collection(@collection_name)
+      @solr.delete_configset(@confname)
     end
 
     it "can check for aliveness" do
@@ -68,6 +83,7 @@ RSpec.describe SolrCloud::Collection do
     it "can create an alias for itself" do
       a = @collection.alias_as(rnd_aliasname)
       expect(@collection.alias_names).to include(a.name)
+      @solr.delete_alias(a.name)
     end
 
     it "doesn't error out on commit or hard commit" do
@@ -77,8 +93,10 @@ RSpec.describe SolrCloud::Collection do
     end
 
     it "can delete itself" do
-      conn = @collection.delete!
-      expect(conn.collections).to be_empty
+      coll = @solr.create_collection(name: rnd_collname, configset: @confname)
+      coll.delete!
+      expect(@solr.collections).not_to include(coll.name)
+      @solr.delete_collection(coll.name)
     end
 
   end

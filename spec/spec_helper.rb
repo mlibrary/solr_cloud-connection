@@ -66,7 +66,7 @@ def cleanout!
 end
 
 def connection
- SolrCloud::Connection.new(url: test_url, user: test_user, password: test_password, logger: :none)
+  SolrCloud::Connection.new(url: test_url, user: test_user, password: test_password, logger: :none)
 end
 
 def test_conf_dir

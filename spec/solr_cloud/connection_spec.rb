@@ -45,7 +45,7 @@ RSpec.describe SolrCloud::Connection do
     end
 
     it "will report a failure to authorize" do
-      expect {SolrCloud::Connection.new(url: test_url)}.to raise_error(SolrCloud::Unauthorized)
+      expect {SolrCloud::Connection.new(url: test_url, user: "NOBODY")}.to raise_error(SolrCloud::Unauthorized)
     end
   end
 
