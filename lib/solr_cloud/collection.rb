@@ -18,7 +18,7 @@ module SolrCloud
 
     # Delete this collection. Unlike the #delete_collection call on a Connection object,
     # for this one we throw an error if the collection isn't found, since that means
-    # it was deleted via some other mechanism and should probably be investigated.
+    # it was deleted via some other mechanism after this object was created and should probably be investigated.
     # @return [Connection] The underlying SolrCloud::Connection
     def delete!
       raise NoSuchCollectionError unless exist?
@@ -44,28 +44,36 @@ module SolrCloud
       false
     end
 
-    # Access to the root info from the api
+    # Access to the root info from the api. Mostly for internal use, but not labeled as such
+    # 'cause users will almost certainly find a use for it.
     def info
       connection.get("api/collections/#{name}").body["cluster"]["collections"][name]
     end
 
     # Reported as healthy?
+    # @return [Boolean]
     def healthy?
       info["health"] == "GREEN"
     end
 
     # A (possibly empty) list of aliases targeting this collection
-    # @return [Array<Alias>] list of aliases
+    # @return [Array<SolrCloud::Alias>] list of aliases that point to this collection
     def aliases
       alias_map = connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
       alias_map.select { |a, c| c == name }.keys.map { |aname| Alias.new(name: aname, connection: connection) }
     end
 
+    # The names of the aliases that point to this collection
+    # @return [Array<String>] the alias names
     def alias_names
       aliases.map(&:name)
     end
 
-    def alias_as(alias_name)
+    # Create an alias for this collection. Always forces an overwrite unless you tell it not to
+    # @param alias_name [String] name of the alias to create
+    # @param force [Boolean] whether or not to overwrite an existing alias
+    # @return [SolrCloud::Alias]
+    def alias_as(alias_name, force: true)
       connection.create_alias(name: alias_name, collection_name: name, force: true)
     end
 
@@ -80,6 +88,11 @@ module SolrCloud
       self
     end
 
+    # What configset was this created with?
+    # @return [SolrCloud::ConfigSet]
+    def configset
+      Configset.new(name: info["configName"], connection: connection)
+    end
 
     def inspect
       anames = alias_names

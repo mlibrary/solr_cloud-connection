@@ -5,13 +5,15 @@ module SolrCloud
   class NoSuchConfigSetError < ArgumentError; end
   class NoSuchAliasError < ArgumentError; end
 
-  class WontOverwriteError < ArgumentError; end
+  class WontOverwriteError < RuntimeError; end
 
-  class ConfigSetInUseError < ArgumentError; end
+  class ConfigSetInUseError < RuntimeError; end
+
+  class CollectionAliasedError < RuntimeError; end
 
   class UnsupportedSolr < RuntimeError; end
 
-  class Unauthorized < RuntimeError; end
+  class Unauthorized < ArgumentError; end
 
   class ConnectionFailed < RuntimeError; end
 end

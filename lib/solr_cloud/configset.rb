@@ -14,8 +14,22 @@ module SolrCloud
       @connection = connection
     end
 
+    # Delete this configset. Just calls {SolrCloud::Connection#delete_configset}
+    # @see SolrCloud::Connection#delete_configset
+    # @return The underlying connection
     def delete!
       @connection.delete_configset(name)
+      @connection
+    end
+
+    def inspect
+      "<#{self.class.name} '#{name}' at #{connection.url}>"
+    end
+
+    alias_method :to_s, :inspect
+
+    def pretty_print(q)
+      q.text inspect
     end
 
   end

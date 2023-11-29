@@ -7,11 +7,12 @@ module SolrCloud
     module ConfigsetAdmin
 
       # Get a list of the already-defined configSets
-      # @return [Array<String>] possibly empty list of configSets
+      # @return [Array<Configset>] possibly empty list of configSets
       def configsets
-        connection.get("api/cluster/configs").body["configSets"]
+        configset_names.map{|cs| Configset.new(name: cs, connection: self)}
       end
 
+      # @return [Array<String>] the names of the config sets
       def configset_names
         connection.get("api/cluster/configs").body["configSets"]
       end
@@ -22,7 +23,7 @@ module SolrCloud
       # @param name [String] Name of the configSet
       # @return [Boolean] Whether a configset with that name exists
       def configset?(name)
-        configsets.include? name.to_s
+        configset_names.include? name.to_s
       end
 
       # Given the path to a solr configuration "conf" directory (i.e., the one with

@@ -4,12 +4,14 @@ module SolrCloud
   class Connection
     module CollectionAdmin
 
-      # Get a list of the already-defined collections
-      # @return [Array<String>] possibly empty list of collection names
+      # Get a list of existing collections
+      # @return [Array<SolrCloud::Collection>] possibly empty list of collection objects
       def collections
         collection_names.map{|coll| collection(coll)}
       end
 
+      # A list of the names of existing collections
+      # @return [Array<String>] the collection names, or empty array if there are none
       def collection_names
         connection.get("api/collections").body["collections"]
       end
@@ -28,10 +30,10 @@ module SolrCloud
       # @param shards [Integer]
       # @param replication_factor [Integer]
       # @raise [NoSuchConfigSetError] if the named configset doesn't exist
-      # @return [String] the name of the collection created
+      # @return [Collection] the collection created
       def create_collection(name:, configset:, version: "", shards: 1, replication_factor: 1)
         name = name + version
-        raise NoSuchConfigSetError.new("Configset #{configset} doesn't exist") unless configset?(configset)
+        raise NoSuchConfigSetError.new("Configset '#{configset}' doesn't exist") unless configset?(configset)
         args = {
           :action => "CREATE",
           :name => name,
@@ -52,6 +54,8 @@ module SolrCloud
           connection.get("solr/admin/collections", { action: "DELETE", name: name })
         end
         self
+      rescue Faraday::BadRequestError
+        raise SolrCloud::CollectionAliasedError.new("Collection '#{name}' can't be deleted; it's in use by aliases #{collection(name).alias_names}")
       end
 
       # Get a connection object specifically for the named collection

@@ -23,6 +23,8 @@ module SolrCloud
         SolrCloud::Alias.new(name: name, connection: self)
       end
 
+      # Is there an alias with this name?
+      # @return [Boolean]
       def alias?(name)
         alias_names.include? name
       end
@@ -42,16 +44,22 @@ module SolrCloud
         end
       end
 
-      # List of alias names
-      # @return [Array<String>] List of aliases
+      # List of alias objects
+      # @return [Array<SolrCloud::Alias>] List of aliases
       def aliases
         alias_map.values
       end
 
+      # List of alias names
+      # @return [Array<String>] the alias names
       def alias_names
         alias_map.keys
       end
 
+      # Get an alias object for the given name
+      # @param name [String] the name of the existing alias
+      # @raise [SolrCloud::NoSuchAliasError] if it doesn't exist
+      # @return [SolrCloud::Alias]
       def alias(name)
         am = alias_map
         raise NoSuchAliasError unless am[name]

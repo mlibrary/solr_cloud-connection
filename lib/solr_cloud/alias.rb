@@ -3,36 +3,50 @@
 module SolrCloud
   class Alias < Collection
 
-    # And alias is, shockingly, an alias
+    # And alias is, shockingly, an alias. Convenience to differentiate aliases from collections.
+    # @see SolrCloud::Connection#alias?
     def alias?
       true
     end
 
+    # Delete this alias
+    # @return [SolrCloud::Connection]
     def delete!
+      coll = collection
       connection.delete_alias(name)
+      coll
     end
 
+    # Get the collection this alias points to.
+    # In real life, Solr will allow an alias to point to more than one collection. Functionality
+    # for this might be added at some point
+    # @return [SolrCloud::Collection]
     def collection
-      return @collection if @collection
-      @collection = connection.collection_for_alias(name)
+      connection.collection_for_alias(name)
     end
 
+    # Redefine what collection this alias points to
+    # This is equivalent to dropping/re-adding the alias, or calling connection.create_alias with `force: true`
+    # @param coll [String, Collection] either the name of the collection, or a collection object itself
+    # @return [Collection] the now-current collection
     def collection=(coll)
-      case coll
-        when String
-          raise NoSuchCollectionError unless connection.collection?(coll)
-          @collection = connection.collection(coll)
-        when Collection
-          raise NoSuchCollectionError unless connection.collection?(coll.name)
-          @collection = Collection.new(name: coll.name, connection: @connection)
-        else
-          raise "Alias#collection= takes a name string or a Collection object"
-      end
-      connection.create_alias(name: name, collection_name: @collection.name, force: true)
-      @collection
+      collect_name = case coll
+                  when String
+                    coll
+                  when Collection
+                    coll.name
+                  else
+                    raise "Alias#collection= only takes a name(string) or a collection, not '#{coll}'"
+                end
+      raise NoSuchCollectionError unless connection.collection?(collect_name)
+      coll = connection.collection(collect_name)
+      connection.create_alias(name: name, collection_name: collect_name, force: true)
+      coll
     end
 
-    # Override info to talk to the underlying collection
+    # Get basic information on the underlying collection, so inherited methods that
+    # use it (e.g., #healthy?) will work.
+    # @overload info()
     def info
       collection.info
     end
