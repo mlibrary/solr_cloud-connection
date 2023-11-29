@@ -160,7 +160,7 @@ This repository is set up to run tests under docker.
 1. docker compose build
 2. docker compose run app bundle install
 3. docker compose up
-4. docker compose run app rspec
+4. docker compose run app bundle exec rspec
 
 ## Contributing
 

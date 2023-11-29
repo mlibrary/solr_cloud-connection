@@ -56,9 +56,9 @@ RSpec.describe SolrCloud::Connection do
 
     it "can create/delete a configset" do
       @solr.create_configset(name: @confname, confdir: test_conf_dir)
-      expect(@solr.configurations).to include(@confname)
+      expect(@solr.configset_names).to include(@confname)
       @solr.delete_configset(@confname)
-      expect(@solr.configurations).not_to include(@confname)
+      expect(@solr.configset_names).not_to include(@confname)
     end
 
     it "won't overwrite existing configset without force: true" do
