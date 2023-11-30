@@ -16,6 +16,12 @@ require_relative "errors"
 require "forwardable"
 
 module SolrCloud
+
+  # The connection object is the basis of all the other stuff. Everything will be created, directly
+  # or indirectly, through the connection.
+  #
+  # For convenience, it forwards #get, #post, #put, and #delete HTTP verbs to the underlying
+  # raw faraday http client.
   class Connection
 
     extend Forwardable
@@ -105,7 +111,7 @@ module SolrCloud
       raise Unauthorized.new("Server reports failed authorization")
     end
 
-    # @return mode [String] the mode (solrcloud or std) solr is running in
+    # @return [String] the mode ("solrcloud" or "std") solr is running in
     def mode
       system["mode"]
     end

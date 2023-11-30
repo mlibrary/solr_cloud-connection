@@ -3,10 +3,16 @@
 require "solr_cloud/connection"
 
 module SolrCloud
+
+  # A Collection provides basic services on the collection -- checking its health,
+  # creating or reporting aliases, and deleting itself.
   class Collection
 
     attr_reader :name, :connection
 
+    # In general, users shouldn't use Collection.new; instead, use
+    # connection.create_collection(name: "coll_name", configset: "existing_configset_name")
+    #
     # @param [String] name The name of the (already existing) collection
     # @param [SolrCloud::Connection] connection Connection to the solr "root" (http://blah:8888/)
     def initialize(name:, connection:)
@@ -69,6 +75,13 @@ module SolrCloud
       aliases.map(&:name)
     end
 
+    # Get a specific alias by name
+    # @param name [String] name of the alias
+    # @todo Check to make sure its an alias of this collection and report an error if not
+    def alias(name)
+      connection.alias(name)
+    end
+
     # Create an alias for this collection. Always forces an overwrite unless you tell it not to
     # @param alias_name [String] name of the alias to create
     # @param force [Boolean] whether or not to overwrite an existing alias
@@ -76,6 +89,9 @@ module SolrCloud
     def alias_as(alias_name, force: true)
       connection.create_alias(name: alias_name, collection_name: name, force: true)
     end
+
+    alias_method :alias_to, :alias_as
+    alias_method :create_alias, :alias_as
 
     # Send a commit (soft if unspecified)
     # @return self

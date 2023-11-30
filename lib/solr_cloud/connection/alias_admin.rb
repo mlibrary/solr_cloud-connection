@@ -7,7 +7,7 @@ module SolrCloud
       AliasCollectionPair = Struct.new(:alias, :collection)
 
       # Create an alias for the given collection name
-      # @TODO allow an alias to point to more than one collection
+      # @todo allow an alias to point to more than one collection?
       # @param name [String] Name of the new alias
       # @param collection_name [String] name of the collection
       # @param force [Boolean] whether to overwrite an existing alias

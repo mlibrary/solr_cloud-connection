@@ -13,14 +13,19 @@ Do basic administrative tasks on a running Solr cloud instance, including:
 
 * At this point the API is unstable, and it doesn't do any actual, you know, searching.
 * Due to there not being any sense of an atomic action when administering solr, this gem does
-  _no caching_. This means the individual actions can involve several round-trips to connect. On the flip
+  _no caching_. This means the individual actions can involve several round-trips to solr. On the flip
   side, if you're doing so much admin that it's a bottleneck, you're well outside this gem's target case.
 * While solr aliases can point to more than one collection at a time, this gem enforces one collection
-  per alias (although many alises can point to the same collection)
+  per alias (although many aliases can point to the same collection)
 
 ## Usage
 
 ### Create a connection to a running solr
+
+The connection object is the basis of all the other stuff. Everything will be created, directly
+or indirectly, through the connection. While using the collection/alias/configset objects
+is preferred, the connection on its own can do most anything. See SolrCloud::Connection for
+the docs. 
 
 A simple connection is made if you pass in basic info, or you can create a faraday connection
 and pass it in yourself.
@@ -29,7 +34,6 @@ and pass it in yourself.
 
 require "solr_cloud/connection"
 
-# You can also pass a logger or specify the Faraday adapter to use
 solr = SolrCloud::connect.new(url: "http://localhost:9999", username: "user", password: "password")
 #    #=> <SolrCloud::Connection http://localhost:9999/>
 

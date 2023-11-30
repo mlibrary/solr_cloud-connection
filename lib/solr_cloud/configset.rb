@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
+require "connection"
+
 module SolrCloud
-  # This is just a placeholder, and not much used, until I can figure
-  # out how to tell which collections are based on which configsets
-  # to report that. It won't (?) tell us which have since been
-  # modified through the schema API, but still would be useful.
+  # A configset can't do much by itself, other than try to delete itself and
+  # throw an error if that's an illegal operation (because a collection is
+  # using it)
   class Configset
 
     attr_reader :name, :connection
@@ -14,7 +15,7 @@ module SolrCloud
       @connection = connection
     end
 
-    # Delete this configset. Just calls {SolrCloud::Connection#delete_configset}
+    # Delete this configset.
     # @see SolrCloud::Connection#delete_configset
     # @return The underlying connection
     def delete!
