@@ -37,10 +37,16 @@ module SolrCloud
         connection.get("solr/admin/collections", action: "DELETEALIAS", name: name)
       end
 
+      # The "raw" alias map, which just maps alias names to collection names
+      # @return [Hash<String, String>]
+      def raw_alias_map
+        connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
+      end
+
       # Get the aliases and create a map of the form
       # @return [Hash<String,Alias>] A hash mapping alias names to alias objects
       def alias_map
-        connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"].keys.each_with_object({}) do |alias_name, h|
+        raw_alias_map.keys.each_with_object({}) do |alias_name, h|
           h[alias_name] = SolrCloud::Alias.new(name: alias_name, connection: self)
         end
       end

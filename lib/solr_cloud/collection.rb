@@ -63,8 +63,7 @@ module SolrCloud
     # A (possibly empty) list of aliases targeting this collection
     # @return [Array<SolrCloud::Alias>] list of aliases that point to this collection
     def aliases
-      alias_map = connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
-      alias_map.select { |a, c| c == name }.keys.map { |aname| Alias.new(name: aname, connection: connection) }
+      connection.raw_alias_map.select { |a, c| c == name }.keys.map { |aname| Alias.new(name: aname, connection: connection) }
     end
 
     # The names of the aliases that point to this collection
@@ -74,10 +73,9 @@ module SolrCloud
     end
 
     # Get a specific alias by name
-    # @param name [String] name of the alias
-    # @todo Check to make sure its an alias of this collection and report an error if not
-    def alias(name)
-      connection.alias(name)
+    # @param aname [String] name of the alias
+    def alias(aname)
+      aliases.find {|a| a.name == aname} || (raise NoSuchAliasError.new("No alias named '#{aname}' pointing to collection #{name}"))
     end
 
     # Create an alias for this collection. Always forces an overwrite unless you tell it not to

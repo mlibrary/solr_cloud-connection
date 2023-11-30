@@ -84,6 +84,24 @@ RSpec.describe SolrCloud::Collection do
       @solr.delete_alias(a.name)
     end
 
+    it "can find an alias pointing to itself" do
+      a = @collection.alias_as(rnd_aliasname)
+      expect(@collection.alias(a.name).name).to eq(a.name)
+      a.delete!
+    end
+
+    it "can't find an non-existent alias" do
+      expect { @collection.alias("DOES_NOT_EXIST") }.to raise_error(SolrCloud::NoSuchAliasError)
+    end
+
+    it "doesn't return an alias that points to a different collection" do
+      other_collection =  @solr.create_collection(name: rnd_collname, configset: @confname)
+      a = other_collection.alias_as(rnd_aliasname)
+      expect { @collection.alias(a.name) }.to raise_error SolrCloud::NoSuchAliasError
+      a.delete!
+      other_collection.delete!
+    end
+
     it "doesn't error out on commit or hard commit" do
       expect(@collection.commit).to eq(@collection)
       expect(@collection.commit(hard: true)).to eq(@collection)

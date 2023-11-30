@@ -8,10 +8,11 @@ module SolrCloud
       # Create a new collection
       # @param name [String] Name for the new collection
       # @param configset [String] name of the configset to use for this collection
-      # @param version [String] A "version" which will be appended to the name, if given. Useful for
-      #   testing and cronjobs.
+      # @param version [String] A "version" which will be appended to the name following an underscore, if given.
+      #   Useful for testing and cronjobs.
       # @param shards [Integer]
       # @param replication_factor [Integer]
+      # @todo Let version take symbols like :date and :datetime
       # @raise [NoSuchConfigSetError] if the named configset doesn't exist
       # @raise [WontOverwriteError] if the collection already exists
       # @return [Collection] the collection created
