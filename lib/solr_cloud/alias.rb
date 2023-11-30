@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module SolrCloud
-
   # An alias can mostly be just treated as a collection. It will identify itself as an alias if you
   # call #alias, and it can return and change the underlying collection it points to.
 
@@ -9,9 +8,6 @@ module SolrCloud
   # Connection#alias, or from a collection, or create one with
   # Collection#alias_as
   class Alias < Collection
-
-
-
     # An alias is, shockingly, an alias. Convenience to differentiate aliases from collections.
     # @see SolrCloud::Connection#alias?
     def alias?
@@ -40,17 +36,15 @@ module SolrCloud
     # @return [Collection] the now-current collection
     def collection=(coll)
       collect_name = case coll
-                       when String
-                         coll
-                       when Collection
-                         coll.name
-                       else
-                         raise "Alias#collection= only takes a name(string) or a collection, not '#{coll}'"
-                     end
+      when String
+        coll
+      when Collection
+        coll.name
+      else
+        raise "Alias#collection= only takes a name(string) or a collection, not '#{coll}'"
+      end
       raise NoSuchCollectionError unless connection.collection?(collect_name)
-      coll = connection.collection(collect_name)
       connection.create_alias(name: name, collection_name: collect_name, force: true)
-      coll
     end
 
     # Get basic information on the underlying collection, so inherited methods that
@@ -69,6 +63,5 @@ module SolrCloud
     def pretty_print(q)
       q.text inspect
     end
-
   end
 end

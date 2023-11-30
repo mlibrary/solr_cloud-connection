@@ -1,5 +1,4 @@
 RSpec.describe SolrCloud::Collection do
-
   before(:all) do
     verify_test_environment!
   end
@@ -53,7 +52,6 @@ RSpec.describe SolrCloud::Collection do
   end
 
   describe "collection object itself can manipulate itself" do
-
     before(:all) do
       cleanout!
       @confname = rnd_configname
@@ -89,7 +87,6 @@ RSpec.describe SolrCloud::Collection do
     it "doesn't error out on commit or hard commit" do
       expect(@collection.commit).to eq(@collection)
       expect(@collection.commit(hard: true)).to eq(@collection)
-
     end
 
     it "can delete itself" do
@@ -98,6 +95,5 @@ RSpec.describe SolrCloud::Collection do
       expect(@solr.collection_names).not_to include(coll.name)
       @solr.delete_collection(coll.name)
     end
-
   end
 end

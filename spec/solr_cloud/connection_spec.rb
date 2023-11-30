@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe SolrCloud::Connection do
-
   before(:all) do
     verify_test_environment!
     cleanout!
@@ -41,11 +40,11 @@ RSpec.describe SolrCloud::Connection do
     end
 
     it "will report a failure to connect" do
-      expect {SolrCloud::Connection.new(url: "http://localhost:9090911") }.to raise_error(SolrCloud::ConnectionFailed)
+      expect { SolrCloud::Connection.new(url: "http://localhost:9090911") }.to raise_error(SolrCloud::ConnectionFailed)
     end
 
     it "will report a failure to authorize" do
-      expect {SolrCloud::Connection.new(url: test_url, user: "NOBODY")}.to raise_error(SolrCloud::Unauthorized)
+      expect { SolrCloud::Connection.new(url: test_url, user: "NOBODY") }.to raise_error(SolrCloud::Unauthorized)
     end
   end
 
@@ -72,9 +71,7 @@ RSpec.describe SolrCloud::Connection do
       expect { @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true) }.not_to raise_error
       @solr.delete_configset(@confname)
     end
-
   end
-
 
   describe "individual collections" do
     before(:all) do

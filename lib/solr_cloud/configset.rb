@@ -7,7 +7,6 @@ module SolrCloud
   # throw an error if that's an illegal operation (because a collection is
   # using it)
   class Configset
-
     attr_reader :name, :connection
 
     def initialize(name:, connection:)
@@ -32,6 +31,5 @@ module SolrCloud
     def pretty_print(q)
       q.text inspect
     end
-
   end
 end

@@ -16,14 +16,12 @@ require_relative "errors"
 require "forwardable"
 
 module SolrCloud
-
   # The connection object is the basis of all the other stuff. Everything will be created, directly
   # or indirectly, through the connection.
   #
   # For convenience, it forwards #get, #post, #put, and #delete HTTP verbs to the underlying
   # raw faraday http client.
   class Connection
-
     extend Forwardable
 
     include ConfigsetAdmin
@@ -47,13 +45,13 @@ module SolrCloud
       @user = user
       @password = password
       @logger = case logger
-                  when :off, :none
-                    Logger.new(File::NULL, level: Logger::FATAL)
-                  when nil
-                    Logger.new($stderr, level: Logger::WARN)
-                  else
-                    logger
-                end
+      when :off, :none
+        Logger.new(File::NULL, level: Logger::FATAL)
+      when nil
+        Logger.new($stderr, level: Logger::WARN)
+      else
+        logger
+      end
       @raw_connection = create_raw_connection(url: url, adapter: adapter, user: user, password: password, logger: @logger)
       bail_if_incompatible!
       @logger.info("Connected to supported solr at #{url}")
@@ -62,7 +60,7 @@ module SolrCloud
     # Pass in your own faraday connection
     # @param faraday_connection [Faraday::Connection] A pre-build faraday connection object
     def self.new_from_faraday(faraday_connection)
-      c = self.allocate
+      c = allocate
       c.instance_variable_set(:@raw_connection, faraday_connection)
       c.instance_variable_set(:@url, faraday_connection.build_url.to_s)
       c
@@ -71,7 +69,7 @@ module SolrCloud
     # Create a Faraday connection object to base the API client off of
     # @see #initialize
     def create_raw_connection(url:, adapter: :httpx, user: nil, password: nil, logger: nil)
-      Faraday.new(request: { params_encoder: Faraday::FlatParamsEncoder }, url: URI(url)) do |faraday|
+      Faraday.new(request: {params_encoder: Faraday::FlatParamsEncoder}, url: URI(url)) do |faraday|
         faraday.use Faraday::Response::RaiseError
         faraday.request :url_encoded
         if user

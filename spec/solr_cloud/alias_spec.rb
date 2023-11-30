@@ -1,5 +1,4 @@
 RSpec.describe SolrCloud::Alias do
-
   before(:all) do
     cleanout!
     @solr = connection
@@ -66,5 +65,4 @@ RSpec.describe SolrCloud::Alias do
     a.delete!
     c2.delete!
   end
-
 end

@@ -3,11 +3,9 @@
 require "solr_cloud/connection"
 
 module SolrCloud
-
   # A Collection provides basic services on the collection -- checking its health,
   # creating or reporting aliases, and deleting itself.
   class Collection
-
     attr_reader :name, :connection
 
     # In general, users shouldn't use Collection.new; instead, use
@@ -36,7 +34,7 @@ module SolrCloud
     # @return [Boolean]
     def alive?
       connection.get("solr/#{name}/admin/ping").body["status"]
-    rescue Faraday::ResourceNotFound => e
+    rescue Faraday::ResourceNotFound
       false
     end
 
@@ -113,10 +111,10 @@ module SolrCloud
     def inspect
       anames = alias_names
       astring = if anames.empty?
-                  ""
-                else
-                  " (aliased by #{anames.map { |x| "'#{x}'" }.join(", ")})"
-                end
+        ""
+      else
+        " (aliased by #{anames.map { |x| "'#{x}'" }.join(", ")})"
+      end
       "<#{self.class} '#{name}'#{astring}>"
     end
 
@@ -125,6 +123,5 @@ module SolrCloud
     def pretty_print(q)
       q.text inspect
     end
-
   end
 end

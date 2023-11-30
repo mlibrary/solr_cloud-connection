@@ -4,12 +4,13 @@ require "zip"
 
 module SolrCloud
   class Connection
+    # methods having to do with configsets, to be included by the connection object.
+    # These are split out only to make it easier to deal with them.
     module ConfigsetAdmin
-
       # Get a list of the already-defined configSets
       # @return [Array<Configset>] possibly empty list of configSets
       def configsets
-        configset_names.map{|cs| Configset.new(name: cs, connection: self)}
+        configset_names.map { |cs| Configset.new(name: cs, connection: self) }
       end
 
       # @return [Array<String>] the names of the config sets
@@ -43,7 +44,7 @@ module SolrCloud
         zfile = "#{Dir.tmpdir}/solr_add_configset_#{name}_#{Time.now.hash}.zip"
         z = ZipFileGenerator.new(confdir, zfile)
         z.write
-        resp = @raw_connection.put("api/cluster/configs/#{config_set_name}") do |req|
+        @raw_connection.put("api/cluster/configs/#{config_set_name}") do |req|
           req.body = File.binread(zfile)
         end
         # TODO: Error check in here somewhere
@@ -63,13 +64,12 @@ module SolrCloud
         self
       rescue Faraday::BadRequestError => e
         msg = e.response[:body]["error"]["msg"]
-        if msg.match? /not delete ConfigSet/
+        if msg.match?(/not delete ConfigSet/)
           raise ConfigSetInUseError.new msg
         else
           raise e
         end
       end
-
 
       # Pulled from the examples for rubyzip. No idea why it's not just a part
       # of the normal interface, but I guess I'm not one to judge.
@@ -84,7 +84,7 @@ module SolrCloud
         def write
           entries = Dir.entries(@input_dir) - %w[. ..]
           ::Zip::File.open(@output_file, create: true) do |zipfile|
-            write_entries entries, '', zipfile
+            write_entries entries, "", zipfile
           end
         end
 
@@ -93,7 +93,7 @@ module SolrCloud
         # A helper method to make the recursion work.
         def write_entries(entries, path, zipfile)
           entries.each do |e|
-            zipfile_path = path == '' ? e : File.join(path, e)
+            zipfile_path = (path == "") ? e : File.join(path, e)
             disk_file_path = File.join(@input_dir, zipfile_path)
 
             if File.directory? disk_file_path

@@ -2,8 +2,9 @@
 
 module SolrCloud
   class Connection
+    # methods having to do with aliases, to be included by the connection object.
+    # These are split out only to make it easier to deal with them.
     module AliasAdmin
-
       AliasCollectionPair = Struct.new(:alias, :collection)
 
       # Create an alias for the given collection name
@@ -16,7 +17,7 @@ module SolrCloud
       # @return [Alias] the newly-created alias
       def create_alias(name:, collection_name:, force: false)
         raise NoSuchCollectionError.new("Can't find collection #{collection_name}") unless collection?(collection_name)
-        if alias?(name) and not force
+        if alias?(name) && !force
           raise WontOverwriteError.new("Alias '#{name}' already points to collection '#{self.alias(name).collection.name}'; won't overwrite without force: true")
         end
         connection.get("solr/admin/collections", action: "CREATEALIAS", name: name, collections: collection_name)

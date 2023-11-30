@@ -2,12 +2,44 @@
 
 module SolrCloud
   class Connection
+    # methods having to do with connections, to be included by the connection object.
+    # These are split out only to make it easier to deal with them.
     module CollectionAdmin
+      # Create a new collection
+      # @param name [String] Name for the new collection
+      # @param configset [String] name of the configset to use for this collection
+      # @param version [String] A "version" which will be appended to the name, if given. Useful for
+      #   testing and cronjobs.
+      # @param shards [Integer]
+      # @param replication_factor [Integer]
+      # @raise [NoSuchConfigSetError] if the named configset doesn't exist
+      # @raise [WontOverwriteError] if the collection already exists
+      # @return [Collection] the collection created
+      def create_collection(name:, configset:, version: nil, shards: 1, replication_factor: 1)
+        fullname = if version
+          "#{name}_#{version}"
+        else
+          name
+        end
+
+        raise WontOverwriteError.new("Collection #{fullname} already exists") if collection?(fullname)
+        raise NoSuchConfigSetError.new("Configset '#{configset}' doesn't exist") unless configset?(configset)
+
+        args = {
+          :action => "CREATE",
+          :name => fullname,
+          :numShards => shards,
+          :replicationFactor => replication_factor,
+          "collection.configName" => configset
+        }
+        connection.get("solr/admin/collections", args)
+        collection(name)
+      end
 
       # Get a list of existing collections
       # @return [Array<SolrCloud::Collection>] possibly empty list of collection objects
       def collections
-        collection_names.map{|coll| collection(coll)}
+        collection_names.map { |coll| collection(coll) }
       end
 
       # A list of the names of existing collections
@@ -22,36 +54,13 @@ module SolrCloud
         collection_names.include? name
       end
 
-      # Create a new collection
-      # @param name [String] Name for the new collection
-      # @param configset [String] name of the configset to use for this collection
-      # @param version [String] A "version" which will be appended to the name, if given. Useful for
-      #   testing and cronjobs.
-      # @param shards [Integer]
-      # @param replication_factor [Integer]
-      # @raise [NoSuchConfigSetError] if the named configset doesn't exist
-      # @return [Collection] the collection created
-      def create_collection(name:, configset:, version: "", shards: 1, replication_factor: 1)
-        name = name + version
-        raise NoSuchConfigSetError.new("Configset '#{configset}' doesn't exist") unless configset?(configset)
-        args = {
-          :action => "CREATE",
-          :name => name,
-          :numShards => shards,
-          :replicationFactor => replication_factor,
-          "collection.configName" => configset
-        }
-        resp = connection.get("solr/admin/collections", args)
-        collection(name)
-      end
-
       # Remove the configuration set with the given name. No-op if the
       # collection doesn't actually exist. Use #connection? manually if you need to raise on does-not-exist
       # @param [String,Symbol] name The name of the configuration set
       # @return [Connection] self
       def delete_collection(name)
         if collection? name
-          connection.get("solr/admin/collections", { action: "DELETE", name: name })
+          connection.get("solr/admin/collections", {action: "DELETE", name: name})
         end
         self
       rescue Faraday::BadRequestError

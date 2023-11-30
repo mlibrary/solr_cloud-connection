@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
+# Errors to make it more clear what's going on if things go south
 module SolrCloud
   class NoSuchCollectionError < ArgumentError; end
+
   class NoSuchConfigSetError < ArgumentError; end
+
   class NoSuchAliasError < ArgumentError; end
 
   class WontOverwriteError < RuntimeError; end
