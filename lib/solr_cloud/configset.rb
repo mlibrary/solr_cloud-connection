@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "connection"
+require "solr_cloud/connection"
 
 module SolrCloud
   # A configset can't do much by itself, other than try to delete itself and
