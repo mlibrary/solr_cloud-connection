@@ -7,8 +7,8 @@ RSpec.describe SolrCloud::Alias do
   end
 
   after(:all) do
-    @solr.delete_collection(@collection.name)
-    @solr.delete_configset(@config_name)
+    connection.delete_collection(@collection.name)
+    connection.delete_configset(@config_name)
   end
 
   it "can create and delete an alias" do

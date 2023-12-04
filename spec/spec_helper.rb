@@ -4,8 +4,8 @@ require "simplecov"
 SimpleCov.start
 
 require "solr_cloud/connection"
-require "dotenv"
-Dotenv.load! ".env.local"
+# require "dotenv"
+# Dotenv.load! ".env.test"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

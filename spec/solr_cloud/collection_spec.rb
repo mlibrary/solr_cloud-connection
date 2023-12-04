@@ -141,6 +141,6 @@ RSpec.describe SolrCloud::Collection do
       @coll.add({id: 1}).commit
       expect(@coll.count).to be(1)
     end
-    
+
   end
 end
