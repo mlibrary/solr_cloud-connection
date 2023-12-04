@@ -168,4 +168,4 @@ This repository is set up to run tests under docker.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/mlibrary/solr_cloud-connect.
+Bug reports and pull requests are welcome on GitHub at https://github.com/mlibrary/solr_cloud-connection.

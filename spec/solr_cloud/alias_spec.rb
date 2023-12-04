@@ -36,6 +36,12 @@ RSpec.describe SolrCloud::Alias do
     a.delete!
   end
 
+  it "throws an error if you try to create it with an illegal name" do
+    expect {
+      @solr.create_alias(name: "abc!", collection_name: @collection.name)
+    }.to raise_error(SolrCloud::IllegalNameError)
+  end
+
   it "can find its collection" do
     a = @solr.create_alias(name: rnd_aliasname, collection_name: @collection.name)
     expect(a.collection.name).to eq(@collection.name)

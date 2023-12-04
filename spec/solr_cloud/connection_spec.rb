@@ -5,7 +5,7 @@ RSpec.describe SolrCloud::Connection do
     verify_test_environment!
     cleanout!
     @solr = connection
-    @confname = "config_tests" + Random.rand(999).to_s
+    @configname = "config_tests" + Random.rand(999).to_s
     @collection_name = "collection_tests" + Random.rand(999).to_s
   end
 
@@ -48,55 +48,16 @@ RSpec.describe SolrCloud::Connection do
     end
   end
 
-  describe "config sets" do
-    it "can get list of configsets" do
-      expect(@solr.configurations).to be_a(Array)
-    end
-
-    it "can create/delete a configset" do
-      @solr.create_configset(name: @confname, confdir: test_conf_dir)
-      expect(@solr.configset_names).to include(@confname)
-      @solr.delete_configset(@confname)
-      expect(@solr.configset_names).not_to include(@confname)
-    end
-
-    it "won't overwrite existing configset without force: true" do
-      @solr.create_configset(name: @confname, confdir: test_conf_dir)
-      expect { @solr.create_configset(name: @confname, confdir: test_conf_dir) }.to raise_error(SolrCloud::WontOverwriteError)
-      @solr.delete_configset(@confname)
-    end
-
-    it "will overwrite existing configset by using force: true" do
-      @solr.create_configset(name: @confname, confdir: test_conf_dir)
-      expect { @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true) }.not_to raise_error
-      @solr.delete_configset(@confname)
-    end
-  end
-
-  describe "individual collections" do
-    before(:all) do
-      @collection_name = "test_collection"
-      @confname = "test_configuration"
-      @solr = connection
-      @solr.delete_collection(@collection_name)
-      @solr.delete_configset(@confname)
-      @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true)
-    end
-
-    after(:all) do
-      @solr.delete_configset(@confname)
-    end
-
-    before(:each) do
-      @coll = @solr.create_collection(name: @collection_name, configset: @confname)
-    end
-
-    after(:each) do
-      @solr.delete_collection(@collection_name)
-    end
-
-    it "can ping a collection to see if it's alive" do
-      expect(@coll.alive?)
+  describe "utility methods" do
+    it "can detect legal/illegal names for solr collections/configsets/aliases" do
+      expect(@solr.legal_solr_name?("abc")).to be_truthy
+      expect(@solr.legal_solr_name?("abc-def")).to be_truthy
+      expect(@solr.legal_solr_name?("abc-123")).to be_truthy
+      expect(@solr.legal_solr_name?("abc_123")).to be_truthy
+      expect(@solr.legal_solr_name?("füdgüd")).to be_falsey
+      expect(@solr.legal_solr_name?("abc!123")).to be_falsey
+      expect(@solr.legal_solr_name?("abc|123")).to be_falsey
+      expect(@solr.legal_solr_name?("_abc")).to be_falsey
     end
   end
 end

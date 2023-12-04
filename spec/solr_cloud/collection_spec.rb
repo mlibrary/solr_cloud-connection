@@ -1,18 +1,18 @@
 RSpec.describe SolrCloud::Collection do
   before(:all) do
     verify_test_environment!
+    @configname = rnd_configname
+    @solr = connection
   end
 
   describe "connection object can create/delete collections" do
     before(:all) do
       cleanout!
-      @confname = rnd_configname
-      @solr = connection
-      @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true)
+      @solr.create_configset(name: @configname, confdir: test_conf_dir, force: true)
     end
 
     after(:all) do
-      @solr.delete_configset(@confname)
+      @solr.delete_configset(@configname)
     end
 
     before(:each) do
@@ -24,14 +24,14 @@ RSpec.describe SolrCloud::Collection do
     end
 
     it "can create/delete a collection" do
-      @solr.create_collection(name: @collection_name, configset: @confname)
+      @solr.create_collection(name: @collection_name, configset: @configname)
       expect(@solr.collection?(@collection_name))
       @solr.delete_collection(@collection_name)
       expect(@solr.collection?(@collection_name)).to be_falsey
     end
 
     it "doesn't identify as an alias" do
-      coll = @solr.create_collection(name: @collection_name, configset: @confname)
+      coll = @solr.create_collection(name: @collection_name, configset: @configname)
       expect(coll.alias?).to be_falsey
     end
 
@@ -46,24 +46,30 @@ RSpec.describe SolrCloud::Collection do
     end
 
     it "won't allow you to drop a configset in use" do
-      @solr.create_collection(name: @collection_name, configset: @confname)
-      expect { @solr.delete_configset @confname }.to raise_error(SolrCloud::ConfigSetInUseError)
+      @solr.create_collection(name: @collection_name, configset: @configname)
+      expect { @solr.delete_configset @configname }.to raise_error(SolrCloud::ConfigSetInUseError)
+    end
+
+    it "throws an error if you try to create it with an illegal name" do
+      expect {
+        @solr.create_collection(name: "abc!", configset: @configname)
+      }.to raise_error(SolrCloud::IllegalNameError)
     end
   end
 
   describe "collection object itself can manipulate itself" do
     before(:all) do
       cleanout!
-      @confname = rnd_configname
+      @configname = rnd_configname
       @solr = connection
-      @solr.create_configset(name: @confname, confdir: test_conf_dir, force: true)
+      @solr.create_configset(name: @configname, confdir: test_conf_dir, force: true)
       @collection_name = rnd_collname
-      @collection = @solr.create_collection(name: @collection_name, configset: @confname)
+      @collection = @solr.create_collection(name: @collection_name, configset: @configname)
     end
 
     after(:all) do
       @solr.delete_collection(@collection_name)
-      @solr.delete_configset(@confname)
+      @solr.delete_configset(@configname)
     end
 
     it "can check for aliveness" do
@@ -95,7 +101,7 @@ RSpec.describe SolrCloud::Collection do
     end
 
     it "doesn't return an alias that points to a different collection" do
-      other_collection =  @solr.create_collection(name: rnd_collname, configset: @confname)
+      other_collection = @solr.create_collection(name: rnd_collname, configset: @configname)
       a = other_collection.alias_as(rnd_aliasname)
       expect { @collection.alias(a.name) }.to raise_error SolrCloud::NoSuchAliasError
       a.delete!
@@ -108,10 +114,33 @@ RSpec.describe SolrCloud::Collection do
     end
 
     it "can delete itself" do
-      coll = @solr.create_collection(name: rnd_collname, configset: @confname)
+      coll = @solr.create_collection(name: rnd_collname, configset: @configname)
       coll.delete!
       expect(@solr.collection_names).not_to include(coll.name)
       @solr.delete_collection(coll.name)
     end
+  end
+
+
+  describe "correctly forwards HTTP verbs" do
+
+    around(:all) do |ex|
+      @cs = connection.create_configset(name: rnd_configname, confdir: test_conf_dir, force: true)
+      ex.run
+      @cs.delete!
+    end
+
+    around(:example) do |ex|
+      @coll = connection.create_collection(name: rnd_collname, configset: @cs.name)
+      ex.run
+      @coll.delete!
+    end
+
+    it "uploads and counts" do
+      expect(@coll.count).to be(0)
+      @coll.add({id: 1}).commit
+      expect(@coll.count).to be(1)
+    end
+    
   end
 end

@@ -12,16 +12,18 @@ module SolrCloud
       # @param name [String] Name of the new alias
       # @param collection_name [String] name of the collection
       # @param force [Boolean] whether to overwrite an existing alias
-      # @raise [WontOverwriteError] if the alias exists and force isn't true
       # @raise [NoSuchCollectionError] if the collections isn't found
       # @return [Alias] the newly-created alias
       def create_alias(name:, collection_name:, force: false)
+        unless legal_solr_name?(name)
+          raise IllegalNameError.new("'#{name}' is not a valid solr alias name. Use only ASCII letters/numbers, dash, and underscore")
+        end
         raise NoSuchCollectionError.new("Can't find collection #{collection_name}") unless collection?(collection_name)
         if alias?(name) && !force
           raise WontOverwriteError.new("Alias '#{name}' already points to collection '#{self.alias(name).collection.name}'; won't overwrite without force: true")
         end
         connection.get("solr/admin/collections", action: "CREATEALIAS", name: name, collections: collection_name)
-        SolrCloud::Alias.new(name: name, connection: self)
+        self.alias(name)
       end
 
       # Is there an alias with this name?

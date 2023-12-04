@@ -19,4 +19,6 @@ module SolrCloud
   class Unauthorized < ArgumentError; end
 
   class ConnectionFailed < RuntimeError; end
+
+  class IllegalNameError < ArgumentError; end
 end

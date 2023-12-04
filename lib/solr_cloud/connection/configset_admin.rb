@@ -27,29 +27,36 @@ module SolrCloud
         configset_names.include? name.to_s
       end
 
+      # Get an existing configset
+      def configset(name)
+        Configset.new(name: name, connection: self)
+      end
+
       # Given the path to a solr configuration "conf" directory (i.e., the one with
       # solrconfig.xml in it), zip it up and send it to solr as a new configset.
       # @param name [String] Name to give the new configset
       # @param confdir [String, Pathname] Path to the solr configuration "conf" directory
       # @param force [Boolean] Whether or not to overwrite an existing configset if there is one
-      # @param version [String] A "version" which will be appended to the name if given. Useful for
-      # testing and cronjobs.
       # @raise [WontOverwriteError] if the configset already exists and "force" is false
-      # @return [String] the name of the configset created
-      def create_configset(name:, confdir:, force: false, version: "")
-        config_set_name = name + version.to_s
+      # @return [Configset] the configset created
+      def create_configset(name:, confdir:, force: false)
+        config_set_name = name
+        unless legal_solr_name?(config_set_name)
+          raise IllegalNameError.new("'#{config_set_name}' is not a valid solr configset name. Use only ASCII letters/numbers, dash, and underscore")
+        end
+
         if configset?(config_set_name) && !force
           raise WontOverwriteError.new("Won't replace configset #{config_set_name} unless 'force: true' passed ")
         end
         zfile = "#{Dir.tmpdir}/solr_add_configset_#{name}_#{Time.now.hash}.zip"
         z = ZipFileGenerator.new(confdir, zfile)
         z.write
-        @raw_connection.put("api/cluster/configs/#{config_set_name}") do |req|
+        @connection.put("api/cluster/configs/#{config_set_name}") do |req|
           req.body = File.binread(zfile)
         end
         # TODO: Error check in here somewhere
         FileUtils.rm(zfile, force: true)
-        config_set_name
+        self.configset(name)
       end
 
       # Remove the configuration set with the given name. No-op if the

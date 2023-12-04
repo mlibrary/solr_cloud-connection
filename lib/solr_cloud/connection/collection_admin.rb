@@ -7,31 +7,34 @@ module SolrCloud
     module CollectionAdmin
       # Create a new collection
       # @param name [String] Name for the new collection
-      # @param configset [String] name of the configset to use for this collection
-      # @param version [String] A "version" which will be appended to the name following an underscore, if given.
-      #   Useful for testing and cronjobs.
+      # @param configset [String, Configset] (name of) the configset to use for this collection
       # @param shards [Integer]
       # @param replication_factor [Integer]
-      # @todo Let version take symbols like :date and :datetime
+      # @raise [IllegalNameError]
       # @raise [NoSuchConfigSetError] if the named configset doesn't exist
       # @raise [WontOverwriteError] if the collection already exists
       # @return [Collection] the collection created
-      def create_collection(name:, configset:, version: nil, shards: 1, replication_factor: 1)
-        fullname = if version
-          "#{name}_#{version}"
-        else
-          name
+      def create_collection(name:, configset:, shards: 1, replication_factor: 1)
+
+        unless legal_solr_name?(name)
+          raise IllegalNameError.new("'#{name}' is not a valid solr name. Use only ASCII letters/numbers, dash, and underscore")
         end
 
-        raise WontOverwriteError.new("Collection #{fullname} already exists") if collection?(fullname)
-        raise NoSuchConfigSetError.new("Configset '#{configset}' doesn't exist") unless configset?(configset)
+        configset_name = case configset
+                           when Configset
+                             configset.name
+                           else
+                             configset.to_s
+                         end
+        raise WontOverwriteError.new("Collection #{name} already exists") if collection?(name)
+        raise NoSuchConfigSetError.new("Configset '#{configset_name}' doesn't exist") unless configset?(configset_name)
 
         args = {
           :action => "CREATE",
-          :name => fullname,
+          :name => name,
           :numShards => shards,
           :replicationFactor => replication_factor,
-          "collection.configName" => configset
+          "collection.configName" => configset_name
         }
         connection.get("solr/admin/collections", args)
         collection(name)
@@ -61,7 +64,7 @@ module SolrCloud
       # @return [Connection] self
       def delete_collection(name)
         if collection? name
-          connection.get("solr/admin/collections", {action: "DELETE", name: name})
+          connection.get("solr/admin/collections", { action: "DELETE", name: name })
         end
         self
       rescue Faraday::BadRequestError
@@ -76,6 +79,7 @@ module SolrCloud
         raise NoSuchCollectionError.new("Collection '#{collection_name}' not found") unless collection?(collection_name)
         Collection.new(name: collection_name, connection: self)
       end
+
     end
   end
 end

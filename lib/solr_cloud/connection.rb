@@ -28,9 +28,36 @@ module SolrCloud
     include CollectionAdmin
     include AliasAdmin
 
-    attr_reader :url, :logger, :raw_connection
+    # @return [String] String representation of the URL to solr
+    attr_reader :url
 
-    def_delegators :@raw_connection, :get, :post, :delete, :put
+    # @return [#info] The logger
+    attr_reader :logger
+
+    # @return [Faraday::Connection] the underlying Faraday connection
+    attr_reader :connection
+
+    # let the underlying connection handle HTTP verbs
+
+    # @!method get
+    # Forwarded on to the underlying Faraday connection
+    # @see Faraday::Connection.get
+    def_delegator :@connection, :get
+
+    # @!method post
+    # Forwarded on to the underlying Faraday connection
+    # @see Faraday::Connection.post
+    def_delegator :@connection, :post
+
+    # @!method delete
+    # Forwarded on to the underlying Faraday connection
+    # @see Faraday::Connection.delete
+    def_delegator :@connection, :delete
+
+    # @!method put
+    # Forwarded on to the underlying Faraday connection
+    # @see Faraday::Connection.put
+    def_delegator :@connection, :put
 
     # Create a new connection to talk to solr
     # @param url [String] URL to the "root" of the solr installation. For a default solr setup, this will
@@ -45,14 +72,14 @@ module SolrCloud
       @user = user
       @password = password
       @logger = case logger
-      when :off, :none
-        Logger.new(File::NULL, level: Logger::FATAL)
-      when nil
-        Logger.new($stderr, level: Logger::WARN)
-      else
-        logger
-      end
-      @raw_connection = create_raw_connection(url: url, adapter: adapter, user: user, password: password, logger: @logger)
+                  when :off, :none
+                    Logger.new(File::NULL, level: Logger::FATAL)
+                  when nil
+                    Logger.new($stderr, level: Logger::WARN)
+                  else
+                    logger
+                end
+      @connection = create_raw_connection(url: url, adapter: adapter, user: user, password: password, logger: @logger)
       bail_if_incompatible!
       @logger.info("Connected to supported solr at #{url}")
     end
@@ -61,7 +88,7 @@ module SolrCloud
     # @param faraday_connection [Faraday::Connection] A pre-build faraday connection object
     def self.new_from_faraday(faraday_connection)
       c = allocate
-      c.instance_variable_set(:@raw_connection, faraday_connection)
+      c.instance_variable_set(:@connection, faraday_connection)
       c.instance_variable_set(:@url, faraday_connection.build_url.to_s)
       c
     end
@@ -69,7 +96,7 @@ module SolrCloud
     # Create a Faraday connection object to base the API client off of
     # @see #initialize
     def create_raw_connection(url:, adapter: :httpx, user: nil, password: nil, logger: nil)
-      Faraday.new(request: {params_encoder: Faraday::FlatParamsEncoder}, url: URI(url)) do |faraday|
+      Faraday.new(request: { params_encoder: Faraday::FlatParamsEncoder }, url: URI(url)) do |faraday|
         faraday.use Faraday::Response::RaiseError
         faraday.request :url_encoded
         if user
@@ -87,7 +114,7 @@ module SolrCloud
 
     # Allow accessing the raw_connection via "connection". Yes, connection.connection
     # can be confusing, but it makes the *_admin stuff easier to read.
-    alias_method :connection, :raw_connection
+    alias_method :connection, :connection
 
     # Check to see if we can actually talk to the solr in question
     # raise [UnsupportedSolr] if the solr version isn't at least 8
@@ -145,6 +172,15 @@ module SolrCloud
       _version_part_int(2)
     end
 
+    # Check to see if the given string follows solr's rules for thing
+    # Solr only allows ASCII letters and numbers, underscore, and dash,
+    # and it can't start with an underscore.
+    # @param str [String] string to check
+    # @return [Boolean]
+    def legal_solr_name?(str)
+      !(/[^a-zA-Z_\-0-9]/.match?(str) or str.start_with?("_"))
+    end
+
     def inspect
       "<#{self.class} #{@url}>"
     end
@@ -156,3 +192,5 @@ module SolrCloud
     end
   end
 end
+
+
