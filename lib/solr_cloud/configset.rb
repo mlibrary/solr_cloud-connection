@@ -15,7 +15,7 @@ module SolrCloud
     end
 
     # Delete this configset.
-    # @see SolrCloud::Connection#delete_configset
+    # @see Connection#delete_configset
     # @return The underlying connection
     def delete!
       @connection.delete_configset(name)
