@@ -19,6 +19,8 @@ jobs:
         run:  cat env.* > .env
       - name: Load .env file
         uses: xom9ikk/dotenv@v2
+        with:
+          mode: github
       - name: build images
         run: docker compose build
       - name: start containers
