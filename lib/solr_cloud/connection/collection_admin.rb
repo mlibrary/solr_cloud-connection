@@ -2,8 +2,13 @@
 
 module SolrCloud
   class Connection
-    # methods having to do with connections, to be included by the connection object.
+    # methods having to do with collections, to be included by the connection object.
     # These are split out only to make it easier to deal with them.
+    #
+    # For almost everything in here, we treat aliases like collections -- calls to #collections,
+    # #collection?, #collection, etc. will respond to, and return, and alias if there is one.
+    # The idea is that you shouldn't need to know if something is an alias or a collection
+    # until it's relevant
     module CollectionAdmin
       # Create a new collection
       # @param name [String] Name for the new collection
@@ -40,16 +45,28 @@ module SolrCloud
         collection(name)
       end
 
-      # Get a list of existing collections
-      # @return [Array<SolrCloud::Collection>] possibly empty list of collection objects
-      def collections
-        collection_names.map { |coll| collection(coll) }
+      # Get a list of _only_ collections, as opposed to the mix of collections and aliases we
+      # usually do.
+      def only_collections
+        connection.get("api/collections").body["collections"].map { |c| Collection.new(name: c, connection: self) }
       end
 
-      # A list of the names of existing collections
-      # @return [Array<String>] the collection names, or empty array if there are none
+      # The names of only connections (and not aliases). Useful as a utility.
+      # @return [Array<String>] the names of the connections
+      def only_collection_names
+        only_collections.map(&:name)
+      end
+
+      # Get a list of collections (and aliases)
+      # @return [Array<Collection, Alias>] possibly empty list of collection and alias objects
+      def collections
+        only_collections.union(aliases)
+      end
+
+      # A list of the names of existing collections and aliases
+      # @return [Array<String>] the collection/alias names, or empty array if there are none
       def collection_names
-        connection.get("api/collections").body["collections"]
+        collections.map(&:name)
       end
 
       # @param name [String] name of the collection to check on
@@ -58,26 +75,17 @@ module SolrCloud
         collection_names.include? name
       end
 
-      # Remove the configuration set with the given name. No-op if the
-      # collection doesn't actually exist. Use #connection? manually if you need to raise on does-not-exist
-      # @param [String,Symbol] name The name of the configuration set
-      # @return [Connection] self
-      def delete_collection(name)
-        if collection? name
-          connection.get("solr/admin/collections", { action: "DELETE", name: name })
-        end
-        self
-      rescue Faraday::BadRequestError
-        raise SolrCloud::CollectionAliasedError.new("Collection '#{name}' can't be deleted; it's in use by aliases #{collection(name).alias_names}")
-      end
-
       # Get a connection object specifically for the named collection
       # @param collection_name [String] name of the (already existing) collection
-      # @return [SolrCloud::Connection::Collection] The collection connection
-      # @raise [NoSuchCollectionError] if the collection doesn't exist
+      # @return [Collection, Alias] The collection or alias
+      # @raise [NoSuchCollectionError] if the collection/alias doesn't exist
       def collection(collection_name)
         raise NoSuchCollectionError.new("Collection '#{collection_name}' not found") unless collection?(collection_name)
-        Collection.new(name: collection_name, connection: self)
+        if only_collection_names.include?(collection_name)
+          Collection.new(name: collection_name, connection: self)
+        else
+          self.alias(collection_name)
+        end
       end
 
     end

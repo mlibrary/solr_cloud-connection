@@ -50,14 +50,20 @@ module SolrCloud
       @sp = "/solr/#{name}"
     end
 
-    # Delete this collection. Unlike the #delete_collection call on a Connection object,
-    # for this one we throw an error if the collection isn't found, since that means
-    # it was deleted via some other mechanism after this object was created and should probably be investigated.
-    # @return [Connection] The underlying SolrCloud::Connection
+    # Delete this collection. Will no-op if the collection somehow doesn't still exist (because it was
+    # deleted via a different method, such as through the API)
+    # @return [Connection] The connection object used to create this collection object
     def delete!
-      raise NoSuchCollectionError unless exist?
-      connection.delete_collection(name)
+      return connection unless exist?
+      raise CollectionAliasedError.new("Cannot delete collection #{name}; it has alias(s) #{alias_names.join(", ")}") if aliased?
+      connection.get("solr/admin/collections", { action: "DELETE", name: name })
       connection
+    end
+
+    # Does this collection still exist?
+    # @return [Boolean]
+    def exist?
+      connection.only_collection_names.include?(name)
     end
 
     # Check to see if the collection is alive
@@ -67,8 +73,6 @@ module SolrCloud
     rescue Faraday::ResourceNotFound
       false
     end
-
-    alias_method :exist?, :alive?
 
     # Is this an alias?
     # Putting this in here breaks all sorts of isolation principles,
@@ -102,10 +106,16 @@ module SolrCloud
       aliases.map(&:name)
     end
 
+    # Does this collection have at least one alias?
+    # @return [Boolean] whether or not it has an alias
+    def aliased?
+      !aliases.empty?
+    end
+
     # Get a specific alias by name
     # @param aname [String] name of the alias
     def alias(aname)
-      aliases.find {|a| a.name == aname} || (raise NoSuchAliasError.new("No alias named '#{aname}' pointing to collection #{name}"))
+      aliases.find { |a| a.name == aname } || (raise NoSuchAliasError.new("No alias named '#{aname}' pointing to collection #{name}"))
     end
 
     # Create an alias for this collection. Always forces an overwrite unless you tell it not to
@@ -143,10 +153,10 @@ module SolrCloud
 
     def add(docs)
       docarray = if docs === Array
-        docs
-      else
-        [docs]
-      end
+                   docs
+                 else
+                   [docs]
+                 end
       post("solr/#{name}/update/") do |r|
         r.body = docarray
       end
@@ -162,10 +172,10 @@ module SolrCloud
     def inspect
       anames = alias_names
       astring = if anames.empty?
-        ""
-      else
-        " (aliased by #{anames.map { |x| "'#{x}'" }.join(", ")})"
-      end
+                  ""
+                else
+                  " (aliased by #{anames.map { |x| "'#{x}'" }.join(", ")})"
+                end
       "<#{self.class} '#{name}'#{astring}>"
     end
 

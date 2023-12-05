@@ -7,6 +7,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # Override the solr url in the environment because docker is running in the
+    # context of the host machine, not the docker image, and thus doesn't know
+    # the machine name "solr"
+    env:
+      SOLR_URL: http://localhost:8983/
+
     steps:
       - uses: actions/checkout@v3
       - name: Create .env file

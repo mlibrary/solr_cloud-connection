@@ -32,27 +32,6 @@ module SolrCloud
         alias_names.include? name
       end
 
-      # Delete the alias
-      # @param name [String] Name of the alias to delete
-      # @return [SolrCloud::Connection]
-      def delete_alias(name)
-        connection.get("solr/admin/collections", action: "DELETEALIAS", name: name)
-      end
-
-      # The "raw" alias map, which just maps alias names to collection names
-      # @return [Hash<String, String>]
-      def raw_alias_map
-        connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
-      end
-
-      # Get the aliases and create a map of the form
-      # @return [Hash<String,Alias>] A hash mapping alias names to alias objects
-      def alias_map
-        raw_alias_map.keys.each_with_object({}) do |alias_name, h|
-          h[alias_name] = SolrCloud::Alias.new(name: alias_name, connection: self)
-        end
-      end
-
       # List of alias objects
       # @return [Array<SolrCloud::Alias>] List of aliases
       def aliases
@@ -79,8 +58,21 @@ module SolrCloud
       # @param name [String] alias name
       # @return [Collection] collection associated with the alias
       def collection_for_alias(name)
-        collname = connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"][name]
-        Collection.new(name: collname, connection: self)
+        Collection.new(name: raw_alias_map[name], connection: self)
+      end
+
+      # Get the aliases and create a map of the form AliasName -> AliasObject
+      # @return [Hash<String,Alias>] A hash mapping alias names to alias objects
+      def alias_map
+        raw_alias_map.keys.each_with_object({}) do |alias_name, h|
+          h[alias_name] = SolrCloud::Alias.new(name: alias_name, connection: self)
+        end
+      end
+
+      # The "raw" alias map, which just maps alias names to collection names
+      # @return [Hash<String, String>]
+      def raw_alias_map
+        connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
       end
     end
   end

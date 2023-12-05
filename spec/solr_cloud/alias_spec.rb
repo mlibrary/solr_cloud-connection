@@ -7,7 +7,7 @@ RSpec.describe SolrCloud::Alias do
   end
 
   after(:all) do
-    connection.delete_collection(@collection.name)
+    @collection.delete!
     connection.delete_configset(@config_name)
   end
 

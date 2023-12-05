@@ -20,13 +20,13 @@ RSpec.describe SolrCloud::Collection do
     end
 
     after(:each) do
-      @solr.delete_collection(@collection_name)
+      @solr.collection(@collection_name).delete! if @solr.collection?(@collection_name)
     end
 
     it "can create/delete a collection" do
-      @solr.create_collection(name: @collection_name, configset: @configname)
+      coll = @solr.create_collection(name: @collection_name, configset: @configname)
       expect(@solr.collection?(@collection_name))
-      @solr.delete_collection(@collection_name)
+      coll.delete!
       expect(@solr.collection?(@collection_name)).to be_falsey
     end
 
@@ -68,7 +68,7 @@ RSpec.describe SolrCloud::Collection do
     end
 
     after(:all) do
-      @solr.delete_collection(@collection_name)
+      @collection.delete!
       @solr.delete_configset(@configname)
     end
 
@@ -87,7 +87,7 @@ RSpec.describe SolrCloud::Collection do
     it "can create an alias for itself" do
       a = @collection.alias_as(rnd_aliasname)
       expect(@collection.alias_names).to include(a.name)
-      @solr.delete_alias(a.name)
+      a.delete!
     end
 
     it "can find an alias pointing to itself" do
@@ -117,7 +117,7 @@ RSpec.describe SolrCloud::Collection do
       coll = @solr.create_collection(name: rnd_collname, configset: @configname)
       coll.delete!
       expect(@solr.collection_names).not_to include(coll.name)
-      @solr.delete_collection(coll.name)
+      coll.delete!
     end
   end
 

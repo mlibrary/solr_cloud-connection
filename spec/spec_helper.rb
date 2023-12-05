@@ -4,8 +4,8 @@ require "simplecov"
 SimpleCov.start
 
 require "solr_cloud/connection"
-# require "dotenv"
-# Dotenv.load! ".env.test"
+require "dotenv"
+Dotenv.load!
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -38,30 +38,24 @@ def test_password
 end
 
 def rnd_collname
-  "collection_test_" + Random.rand(9999).to_s
+  "rspec_collection_" + Random.rand(9999).to_s
 end
 
 def rnd_configname
-  "config_test_" + Random.rand(9999).to_s
+  "rspec_config_" + Random.rand(9999).to_s
 end
 
 def rnd_aliasname
-  "alias_test_" + Random.rand(9999).to_s
+  "rspec_alias_" + Random.rand(9999).to_s
 end
 
+# Clean out whatever's left over from the last run of failed tests. Need to do aliases then
+# collections then configsets due to possible dependencies.
 def cleanout!
-  c = connection
-
-  c.alias_names.select { |x| x.start_with?("alias_test_") }.each do |a|
-    c.delete_alias(a)
-  end
-
-  c.collection_names.select { |x| x.start_with?("collection_test_") }.each do |cs|
-    c.delete_collection(cs)
-  end
-
-  c.configset_names.select { |x| x.start_with?("config_test_") }.each do |cs|
-    c.delete_configset(cs)
+  connection.collections.select{|c| c.name.start_with?("rspec_alias")}.each(&:delete!)
+  connection.collections.select{|c| c.name.start_with?("rspec_collection")}.each(&:delete!)
+  connection.configset_names.select { |x| x.start_with?("rspec_config_") }.each do |cs|
+    connection.delete_configset(cs)
   end
 end
 
