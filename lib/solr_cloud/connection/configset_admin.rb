@@ -56,7 +56,7 @@ module SolrCloud
         end
         # TODO: Error check in here somewhere
         FileUtils.rm(zfile, force: true)
-        self.configset(name)
+        configset(name)
       end
 
       # Remove the configuration set with the given name. No-op if the

@@ -24,6 +24,18 @@ RSpec.describe SolrCloud::Alias do
     a.delete!
   end
 
+  it "can be found as if it's a collection" do
+    a = @collection.alias_as(rnd_aliasname)
+    expect(@solr.collection_names).to include(a.name)
+    a2 = @solr.collection(a.name)
+    expect(a2.alias?)
+    expect(a.collection.name).to eq(@collection.name)
+    expect(a2.name).to eq(a.name)
+    expect(a2.collection.name).to eq(a.collection.name)
+    a.delete!
+    a2.delete!
+  end
+
   it "errors if the collection doesn't exist" do
     expect { @solr.create_alias(name: rnd_aliasname, collection_name: "DOESNOTEXIST") }.to raise_error(SolrCloud::NoSuchCollectionError)
   end
