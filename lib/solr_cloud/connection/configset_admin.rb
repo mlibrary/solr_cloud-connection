@@ -28,7 +28,7 @@ module SolrCloud
       end
 
       # Get an existing configset
-      def configset(name)
+      def get_configset(name)
         Configset.new(name: name, connection: self)
       end
 
@@ -56,7 +56,7 @@ module SolrCloud
         end
         # TODO: Error check in here somewhere
         FileUtils.rm(zfile, force: true)
-        configset(name)
+        get_configset(name)
       end
 
       # Remove the configuration set with the given name. No-op if the

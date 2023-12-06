@@ -5,7 +5,7 @@ RSpec.describe SolrCloud::Collection do
     @solr = connection
   end
 
-  describe "connection object can create/delete collections" do
+  describe "via connection object" do
     before(:all) do
       cleanout!
       @solr.create_configset(name: @configname, confdir: test_conf_dir, force: true)
@@ -20,14 +20,14 @@ RSpec.describe SolrCloud::Collection do
     end
 
     after(:each) do
-      @solr.collection(@collection_name).delete! if @solr.collection?(@collection_name)
+      @solr.get_collection(@collection_name).delete! if @solr.has_collection?(@collection_name)
     end
 
     it "can create/delete a collection" do
       coll = @solr.create_collection(name: @collection_name, configset: @configname)
-      expect(@solr.collection?(@collection_name))
+      expect(@solr.has_collection?(@collection_name))
       coll.delete!
-      expect(@solr.collection?(@collection_name)).to be_falsey
+      expect(@solr.has_collection?(@collection_name)).to be_falsey
     end
 
     it "doesn't identify as an alias" do
@@ -41,8 +41,12 @@ RSpec.describe SolrCloud::Collection do
       }.to raise_error(SolrCloud::NoSuchConfigSetError)
     end
 
-    it "throws an error if you try to get admin for a non-existant collection" do
-      expect { @solr.collection("INVALID_COLLECTION_NAME") }.to raise_error(SolrCloud::NoSuchCollectionError)
+    it "returns nil if you try to get a non-existant collection with get_collection" do
+      expect(@solr.get_collection("INVALID_COLLECTION_NAME")).to be_nil
+    end
+
+    it "returns an error if you try to get a non-existant collection with get_collection!" do
+      expect { @solr.get_collection!("INVALID_COLLECTION_NAME") }.to raise_error(SolrCloud::NoSuchCollectionError)
     end
 
     it "won't allow you to drop a configset in use" do
@@ -57,7 +61,7 @@ RSpec.describe SolrCloud::Collection do
     end
   end
 
-  describe "collection object itself can manipulate itself" do
+  describe "collection object" do
     before(:all) do
       cleanout!
       @configname = rnd_configname
@@ -92,18 +96,18 @@ RSpec.describe SolrCloud::Collection do
 
     it "can find an alias pointing to itself" do
       a = @collection.alias_as(rnd_aliasname)
-      expect(@collection.alias(a.name).name).to eq(a.name)
+      expect(@collection.get_alias(a.name).name).to eq(a.name)
       a.delete!
     end
 
     it "can't find an non-existent alias" do
-      expect { @collection.alias("DOES_NOT_EXIST") }.to raise_error(SolrCloud::NoSuchAliasError)
+      expect(@collection.get_alias("DOES_NOT_EXIST")).to be_nil
     end
 
     it "doesn't return an alias that points to a different collection" do
       other_collection = @solr.create_collection(name: rnd_collname, configset: @configname)
       a = other_collection.alias_as(rnd_aliasname)
-      expect { @collection.alias(a.name) }.to raise_error SolrCloud::NoSuchAliasError
+      expect(@collection.get_alias(a.name)).to be_nil
       a.delete!
       other_collection.delete!
     end

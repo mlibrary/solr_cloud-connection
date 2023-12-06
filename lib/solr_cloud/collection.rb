@@ -35,7 +35,7 @@ module SolrCloud
     # @return [SolrCloud::Connection] the underlying SolrCloud connection
     attr_reader :name
 
-    # @return The name of the collection
+    # @return The name of the get_collection
     attr_reader :connection
 
     # In general, users shouldn't use Collection.new; instead, use
@@ -44,7 +44,7 @@ module SolrCloud
     # @param [String] name The name of the (already existing) collection
     # @param [SolrCloud::Connection] connection Connection to the solr "root" (http://blah:8888/)
     def initialize(name:, connection:)
-      # raise NoSuchCollectionError.new("No collection #{name}") unless connection.collection?(name)
+      # raise NoSuchCollectionError.new("No collection #{name}") unless connection.has_collection?(name)
       @connection = connection.dup
       @name = name
       @sp = "/solr/#{name}"
@@ -76,7 +76,7 @@ module SolrCloud
 
     # Is this an alias?
     # Putting this in here breaks all sorts of isolation principles,
-    # but being able to call #alias? on anything collection-like is
+    # but being able to call #get_alias? on anything collection-like is
     # convenient
     def alias?
       false
@@ -97,7 +97,7 @@ module SolrCloud
     # A (possibly empty) list of aliases targeting this collection
     # @return [Array<SolrCloud::Alias>] list of aliases that point to this collection
     def aliases
-      connection.raw_alias_map.select { |a, c| c == name }.keys.map { |aname| Alias.new(name: aname, connection: connection) }
+      connection.alias_map.select { |_alias_name, ac| ac.collection.name == name }.values.map(&:alias)
     end
 
     # The names of the aliases that point to this collection
@@ -112,10 +112,20 @@ module SolrCloud
       !aliases.empty?
     end
 
+    # Do we have an alias of the given name?
     # Get a specific alias by name
-    # @param aname [String] name of the alias
-    def alias(aname)
-      aliases.find { |a| a.name == aname } || (raise NoSuchAliasError.new("No alias named '#{aname}' pointing to collection #{name}"))
+    # @param alias_name [String] name of the alias
+    # @return [Boolean]
+    def has_alias?(alias_name)
+      alias_names.include?(alias_name)
+    end
+
+    # Get an alias that points to this collection by name, or nil if not found
+    # @param alias_name [String] name of the alias
+    # @return [Alias, nil] The alias object, or nil if not found
+    def get_alias(alias_name)
+      return nil unless has_alias?(alias_name)
+      connection.get_alias(alias_name)
     end
 
     # Create an alias for this collection. Always forces an overwrite unless you tell it not to
@@ -125,9 +135,6 @@ module SolrCloud
     def alias_as(alias_name, force: true)
       connection.create_alias(name: alias_name, collection_name: name, force: true)
     end
-
-    alias_method :alias_to, :alias_as
-    alias_method :create_alias, :alias_as
 
     # Send a commit (soft if unspecified)
     # @return self

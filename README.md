@@ -2,149 +2,103 @@
 
 Do basic administrative tasks on a running Solr cloud instance, including:
 
+* create (i.e., upload) a configSet when given a `conf` directory
 * list, create, and delete configsets, collections, and aliases
 * get basic version information for the running solr
 * check on the health of individual collections
-* treat an alias (mostly) as a collection, just as you'd expect
+* treat an alias (mostly) as a collection
 * TODO automatically generate methods to talk to defined requestHandlers
-* TODO collect and deal with search results in a sane way
+* TODO Add something useful for configsets to do
+
+In almost all cases, you can treat an alias to a collection like the underlying collection. 
+
+## A note about deleting things
+
+Collections, aliases, and configsets all have a `#delete!` method. Keep in mind that solr 
+enforces a rule that nothing in-use can be deleted. This gem will throw appropriate errors
+if you try to delete a configset that's being used by a collection, or try to delete
+a collections that's pointed to by an alias.
 
 ## Caveats
 
-* At this point the API is unstable, and it doesn't do any actual, you know, searching.
-* Due to there not being any sense of an atomic action when administering solr, this gem does
-  _no caching_. This means the individual actions can involve several round-trips to solr. On the flip
-  side, if you're doing so much admin that it's a bottleneck, you're well outside this gem's target case.
+* At this point the API is unstable
+* Performance is desperately, hilariously terrible. Solr has no sense of an atomic action and plenty of other ways
+  (e.g, the admin interface) to mess with things, so nothing is cached. 
+  This means that individual actions can involve several round-trips to solr. If you're doing so much admin
+  that this becomes a bottleneck, you're well outside this gem's target case.
 * While solr aliases can point to more than one collection at a time, this gem enforces one collection
   per alias (although many aliases can point to the same collection)
 
 ## Usage
 
-### Create a connection to a running solr
-
-The connection object is the basis of all the other stuff. Everything will be created, directly
-or indirectly, through the connection. While using the collection/alias/configset objects
-is preferred, the connection on its own can do most anything. See SolrCloud::Connection for
-the docs. 
-
-A simple connection is made if you pass in basic info, or you can create a faraday connection
-and pass it in yourself.
+The code below covers all the basics. See the docs for full sets of parameters, which errors are
+thrown, etc. 
 
 ```ruby
 
 require "solr_cloud/connection"
 
-solr = SolrCloud::connect.new(url: "http://localhost:9999", username: "user", password: "password")
-#    #=> <SolrCloud::Connection http://localhost:9999/>
+server = SolrCloud::connect.new(url: "http://localhost:8023", username: "user", password: "password")
+#    #=> <SolrCloud::Connection http://localhost:8023/>
 
 # or bring your own Faraday object
-solr = SolrCloud::connect.new_with_faraday(faraday_connection)
+# server = SolrCloud::connect.new_with_faraday(faraday_connection)
 
-```
+server.configset_names #=> ["_default"]
+default = server.get_configset("_default") #=> <SolrCloud::Configset '_default' at http://localhost:8983>
 
-### Configsets
+# Create a new one by taking a directory, zipping it up, and sending it to solr
+cset = server.create_configset(name: "my_awesome_configset_for_cars", confdir: "/path/to/mycore/conf")
+server.configset_names #=> ["_default", "my_awesome_configset_for_cars"]
 
-Configuration sets can be created by giving a path to the `conf` directory (with
-`solrconfig.xml` and the schema and such) and a name.
+# That's a dumb name. We'll try again.
+cset.delete!
+cset = server.create_configset(name: "cars_config", confdir: "/path/to/mycore/conf")
 
-```ruby
-connect.configset_names #=> []
-cset = connect.create_configset(name: "myconfig", confdir: "/path/to/yourconfig/conf")
+# Collections and aliases are mostly treated the same
+server.collection_names #=> ["cars_v1", "cars_v2", "cars"] -- collections AND aliases
+server.only_collection_names #=> ["cars_v1", "cars_v2"]
+server.alias_names #=> ["cars"]
 
-# Get a list of existing configsets
-arr_of_configsets_objects = @connect.configsets
-arr_of_names_as_strings = @connect.configset_names
+typo = server.get_collection("cars__V2") #=> nil, doesn't exist
+cars_v2 = server.get_collection("cars_v2")
 
-# Test and see if it exists by name
-connect.configset?("myconfig") #=> true
+cars_v2.alive? #=> true
+cars_v2.count #=> 133 -- we're assuming there's stuff in it.
 
-# If it already exists, you can just grab it by name
 
-def_config = connect.configset("_default")
+# Find out about its aliases, if any
+cars_v2.alias? #=> false. It's a true collection
+cars_v2.aliased? #=> true
+cars_v2.aliases #=> [<SolrCloud::Alias "cars" (alias of "cars_v2")> ]
+cars_v2.has_alias?("cars") #=> true
 
-# It makes sure you don't overwrite when creating a new set
-connect.create_configset(name: "myconfig", confdir: "/path/to/yourconfig/conf")
-      #=> WontOverwriteError
+cars_v2.delete! #=> SolrCloud::CollectionAliasedError: Collection 'cars_v2' can't be deleted; it's in use by aliases ["cars"]
 
-# ...but you can force it
-connect.create_configset(name: "myconfig", confdir: "/path/to/yourconfig/conf", force: true)
+# Make a new collection
+cars_v3 = server.create_collection(name: "cars_v3", configset: "cars_config")
+cars_v3.aliased? #=> false
+cars_v3.count #=> 0
+cars_v3.configset #=> <SolrCloud::Configset 'cars_config' at http://localhost:8023>
 
-# And get rid of it
-myconfig.delete!
-connect.configset?("myconfig") #=> false
+# Work directly with an alias as if it's a collection
+cars = server.get_collection("cars")
+cars.alias? #=> true
+cars.collection #=> <SolrCloud::Collection 'cars_v2' (aliased by 'cars')>
 
-```
+# Make a new alias to v2
+old_cars = cars_v2.alias_as("old_cars") #=> <SolrCloud::Alias "old_cars" (alias of "cars_v2")>
+cars_v2.aliases #=> [<SolrCloud::Alias "cars" (alias of "cars_v2")>, <SolrCloud::Alias "old_cars" (alias of "cars_v2")>]
 
-### Collections
+# Now lets point the "cars" alias at cars_v3
+cars.switch_collection_to cars_v3
 
-Collections can be listed, tested for health and aliases, used to create an alias, and deleted. 
+cars.collection.name #=> "cars_v3"
+cars_v2.alias_names #=> ["old_cars"]
 
-```ruby
+# cars_v1 isn't doing anything for us anymore. Ditch it.
+cars_v1.delete!
 
-connect.collection_names #=> []
-connect.create_collection(name: "mycoll", configset: "does_not_exist") #=> SolrCloud::NoSuchConfigSetError: Configset does_not_exist doesn't exist
-mycoll = connect.create_collection(name: "mycoll", configset: "_default")
-mycoll.name #=> "mycoll"
-
-# Test and see if it exists
-connect.collection?("mycoll") #=> true
-
-# Get all of them
-
-arr_of_collection_objects = connect.collections
-arr_of_names_as_strings = connect.collection_names
-
-# or get a single one by name
-coll = connect.collection("some_other_collection")
-
-mycoll.alive? # => true
-mycoll.healthy? #=> true. I'm not sure how these are different
-
-mycoll.alias? # false. It's a collection. 
-
-# Which configset is it based on?
-mycoll.configset #=> <SolrCloud::Configset '_default' at http://localhost:9999/>
-
-# Sniff out and create aliases
-mycoll.aliases #=> [] None as of yet
-myalias = mycoll.alias_as("myalias")
-
-mycoll.aliases #=> [<SolrCloud::Alias 'myalias' (alias of 'mycoll')>]
-mycoll.alias_names #=> ["myalias"]
-
-# Collection, Alias, and Configset can all access the underlying connection object
-# and call `get`, `post`, `put`, and `delete`
-mycoll.collection #=> 
-mycoll.collection.get("path/from/connection/url", arg1: "One", arg2: "Two")
-
-# Try to delete the collection
-mycoll.delete! #=> SolrCloud::CollectionAliasedError: Collection 'mycoll' can't be deleted; it's in use by aliases ["myalias"]
-myalias.delete!
-
-mycoll.delete!
-
-```
-
-### Aliases
-
-In all the important ways, aliases can be treated like collections. Here are the exceptions.
-
-```ruby
-
-# You can create an alias from the collection you're aliasing
-myalias = mycoll.alias_as("myalias")
-
-# Ask the connection object if it exists, and get it
-connect.alias?("myalias") #=> true
-myalias = connect.alias("myalias")
-
-# As this object if it's an alias, as opposed to a collection
-myalias.alias? #=> true
-
-# Set the collection this alias points to, removing its link from its existing collection
-myalias.collection = my_other_collection #=> sets myalias to point at my_other_collection
-
-myalias.delete!
 ```
 
 ## Installation

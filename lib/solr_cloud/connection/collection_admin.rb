@@ -6,7 +6,7 @@ module SolrCloud
     # These are split out only to make it easier to deal with them.
     #
     # For almost everything in here, we treat aliases like collections -- calls to #collections,
-    # #collection?, #collection, etc. will respond to, and return, and alias if there is one.
+    # #has_collection?, #collection, etc. will respond to, and return, and alias if there is one.
     # The idea is that you shouldn't need to know if something is an alias or a collection
     # until it's relevant
     module CollectionAdmin
@@ -31,7 +31,7 @@ module SolrCloud
                            else
                              configset.to_s
                          end
-        raise WontOverwriteError.new("Collection #{name} already exists") if collection?(name)
+        raise WontOverwriteError.new("Collection #{name} already exists") if has_collection?(name)
         raise NoSuchConfigSetError.new("Configset '#{configset_name}' doesn't exist") unless configset?(configset_name)
 
         args = {
@@ -42,7 +42,7 @@ module SolrCloud
           "collection.configName" => configset_name
         }
         connection.get("solr/admin/collections", args)
-        collection(name)
+        get_collection(name)
       end
 
       # Get a list of _only_ collections, as opposed to the mix of collections and aliases we
@@ -71,23 +71,30 @@ module SolrCloud
 
       # @param name [String] name of the collection to check on
       # @return [Boolean] Whether a collection with the passed name exists
-      def collection?(name)
+      def has_collection?(name)
         collection_names.include? name
       end
 
-      # Get a connection object specifically for the named collection
+      # Get a collection object specifically for the named collection
       # @param collection_name [String] name of the (already existing) collection
-      # @return [Collection, Alias] The collection or alias
-      # @raise [NoSuchCollectionError] if the collection/alias doesn't exist
-      def collection(collection_name)
-        raise NoSuchCollectionError.new("Collection '#{collection_name}' not found") unless collection?(collection_name)
+      # @return [Collection, Alias, nil] The collection or alias if found, nil if not
+      def get_collection(collection_name)
+        return nil unless has_collection?(collection_name)
         if only_collection_names.include?(collection_name)
           Collection.new(name: collection_name, connection: self)
         else
-          self.alias(collection_name)
+          get_alias(collection_name)
         end
       end
 
+      # Get a connection/alias object, throwing an error if it's not found
+      # @param collection_name [String] name of the (already existing) collection
+      # @return [Collection, Alias] The collection or alias
+      # @raise [NoSuchCollectionError] if the collection/alias doesn't exist
+      def get_collection!(collection_name)
+        raise NoSuchCollectionError.new("Collection '#{collection_name}' not found") unless has_collection?(collection_name)
+        get_collection(collection_name)
+      end
     end
   end
 end

@@ -27,13 +27,13 @@ RSpec.describe SolrCloud::Alias do
   it "can be found as if it's a collection" do
     a = @collection.alias_as(rnd_aliasname)
     expect(@solr.collection_names).to include(a.name)
-    a2 = @solr.collection(a.name)
-    expect(a2.alias?)
-    expect(a.collection.name).to eq(@collection.name)
-    expect(a2.name).to eq(a.name)
-    expect(a2.collection.name).to eq(a.collection.name)
     a.delete!
-    a2.delete!
+  end
+
+  it "can be gotten as if it's a collection" do
+    a = @collection.alias_as(rnd_aliasname)
+    expect(@solr.get_collection(a.name)).to be_instance_of(SolrCloud::Alias)
+    a.delete!
   end
 
   it "errors if the collection doesn't exist" do
@@ -60,9 +60,10 @@ RSpec.describe SolrCloud::Alias do
     a.delete!
   end
 
-  it "errors out if you try to get a non-existent alias" do
-    expect { @solr.alias("NOSUCHALIAS") }.to raise_error(SolrCloud::NoSuchAliasError)
+  it "returns nil if you try to get a non-existent alias" do
+    expect(@solr.get_alias("NOSUCHALIAS")).to be_nil
   end
+
 
   it "can reset its collection with a collection object" do
     a = @solr.create_alias(name: rnd_aliasname, collection_name: @collection.name)
