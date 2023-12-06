@@ -2,7 +2,7 @@
 
 module SolrCloud
   # An alias can mostly be just treated as a collection. It will identify itself as an alias if you
-  # call #alias, and it can return and change the underlying collection it points to.
+  # call #alias?, and it can return and change the underlying collection it points to.
 
   # An alias shouldn't be created directly. Rather, get an existing one with
   # Connection#alias, or from a collection, or create one with

@@ -101,6 +101,10 @@ cars_v1.delete!
 
 ```
 
+## Documentation
+
+Run `bundle exec rake docs` to generate the documentation in `docs/`
+
 ## Installation
 
 Install the gem and add to the application's Gemfile by executing:

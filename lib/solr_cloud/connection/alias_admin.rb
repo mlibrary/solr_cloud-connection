@@ -5,10 +5,14 @@ module SolrCloud
     # methods having to do with aliases, to be included by the connection object.
     # These are split out only to make it easier to deal with them.
     module AliasAdmin
+
+      # A simple data-class to pair an alias with its collection
       AliasCollectionPair = Struct.new(:alias, :collection)
 
-      # Create an alias for the given collection name
-      # @todo allow an alias to point to more than one has_collection?
+      # Create an alias for the given collection name.
+      #
+      # In general, prefer {Collection#alias_as} instead of
+      # running everything through the connection object.
       # @param name [String] Name of the new alias
       # @param collection_name [String] name of the collection
       # @param force [Boolean] whether to overwrite an existing alias

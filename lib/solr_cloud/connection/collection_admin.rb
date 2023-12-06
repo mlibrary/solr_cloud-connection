@@ -10,7 +10,7 @@ module SolrCloud
     # The idea is that you shouldn't need to know if something is an alias or a collection
     # until it's relevant
     module CollectionAdmin
-      # Create a new collection
+      # Create and return a new collection.
       # @param name [String] Name for the new collection
       # @param configset [String, Configset] (name of) the configset to use for this collection
       # @param shards [Integer]
@@ -32,7 +32,7 @@ module SolrCloud
                              configset.to_s
                          end
         raise WontOverwriteError.new("Collection #{name} already exists") if has_collection?(name)
-        raise NoSuchConfigSetError.new("Configset '#{configset_name}' doesn't exist") unless configset?(configset_name)
+        raise NoSuchConfigSetError.new("Configset '#{configset_name}' doesn't exist") unless has_configset?(configset_name)
 
         args = {
           :action => "CREATE",

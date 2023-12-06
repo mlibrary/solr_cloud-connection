@@ -7,7 +7,12 @@ module SolrCloud
   # throw an error if that's an illegal operation (because a collection is
   # using it)
   class Configset
-    attr_reader :name, :connection
+
+    # @return [String] the name of this configset
+    attr_reader :name
+
+    # @return [Connection] the connection object used to build this configset object
+    attr_reader :connection
 
     def initialize(name:, connection:)
       @name = name
@@ -18,8 +23,20 @@ module SolrCloud
     # @see Connection#delete_configset
     # @return The underlying connection
     def delete!
-      @connection.delete_configset(name)
-      @connection
+      connection.delete_configset(name)
+      connection
+    end
+
+    # Which collections use this configset?
+    # @return [Array<Collection>] The collections defined to use this configset
+    def used_by
+      connection.only_collections.select { |coll| coll.configset.name == name }
+    end
+
+    # Are there any collections currently using this configset?
+    # @return [Boolean]
+    def in_use?
+      !used_by.empty?
     end
 
     def inspect
