@@ -4,7 +4,7 @@ RSpec.describe SolrCloud::Connection do
   before(:all) do
     verify_test_environment!
     cleanout!
-    @solr = connection
+    @server = connection
     @configname = "config_tests" + Random.rand(999).to_s
     @collection_name = "collection_tests" + Random.rand(999).to_s
   end
@@ -50,14 +50,14 @@ RSpec.describe SolrCloud::Connection do
 
   describe "utility methods" do
     it "can detect legal/illegal names for solr collections/configsets/aliases" do
-      expect(@solr.legal_solr_name?("abc")).to be_truthy
-      expect(@solr.legal_solr_name?("abc-def")).to be_truthy
-      expect(@solr.legal_solr_name?("abc-123")).to be_truthy
-      expect(@solr.legal_solr_name?("abc_123")).to be_truthy
-      expect(@solr.legal_solr_name?("füdgüd")).to be_falsey
-      expect(@solr.legal_solr_name?("abc!123")).to be_falsey
-      expect(@solr.legal_solr_name?("abc|123")).to be_falsey
-      expect(@solr.legal_solr_name?("_abc")).to be_falsey
+      expect(@server.legal_solr_name?("abc")).to be_truthy
+      expect(@server.legal_solr_name?("abc-def")).to be_truthy
+      expect(@server.legal_solr_name?("abc-123")).to be_truthy
+      expect(@server.legal_solr_name?("abc_123")).to be_truthy
+      expect(@server.legal_solr_name?("füdgüd")).to be_falsey
+      expect(@server.legal_solr_name?("abc!123")).to be_falsey
+      expect(@server.legal_solr_name?("abc|123")).to be_falsey
+      expect(@server.legal_solr_name?("_abc")).to be_falsey
     end
   end
 end

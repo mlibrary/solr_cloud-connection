@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0] - 2023-12-06
+
+- Major overhaul of the interface to use more-explicit and less-confusing method names
+- Remove code that tried to "version" collections and configsets, since it was dumb
+- Get github actions working to run tests
+- Make aliases even more of a paper-thin wrapper around collections, such that, e.g.
+  `coll = get_collection(alias_name)` will return the appropriate alias. Use
+  `coll.alias?` to determine if it's an alias or collection if that becomes important.
+
 ## [0.2.0] - 2023-12-01
 
 - Added options `:date` and `:datetime` to the `version:` argument to `create_collection`

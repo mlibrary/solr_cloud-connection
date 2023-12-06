@@ -2,17 +2,17 @@ RSpec.describe SolrCloud::Collection do
   before(:all) do
     verify_test_environment!
     @configname = rnd_configname
-    @solr = connection
+    @server = connection
   end
 
-  describe "connection object can create/delete collections" do
+  describe "via connection object" do
     before(:all) do
       cleanout!
-      @solr.create_configset(name: @configname, confdir: test_conf_dir, force: true)
+      @server.create_configset(name: @configname, confdir: test_conf_dir, force: true)
     end
 
     after(:all) do
-      @solr.delete_configset(@configname)
+      @server.delete_configset(@configname)
     end
 
     before(:each) do
@@ -20,56 +20,65 @@ RSpec.describe SolrCloud::Collection do
     end
 
     after(:each) do
-      @solr.collection(@collection_name).delete! if @solr.collection?(@collection_name)
+      @server.get_collection(@collection_name).delete! if @server.has_collection?(@collection_name)
     end
 
     it "can create/delete a collection" do
-      coll = @solr.create_collection(name: @collection_name, configset: @configname)
-      expect(@solr.collection?(@collection_name))
+      coll = @server.create_collection(name: @collection_name, configset: @configname)
+      expect(@server.has_collection?(@collection_name))
       coll.delete!
-      expect(@solr.collection?(@collection_name)).to be_falsey
+      expect(@server.has_collection?(@collection_name)).to be_falsey
     end
 
     it "doesn't identify as an alias" do
-      coll = @solr.create_collection(name: @collection_name, configset: @configname)
+      coll = @server.create_collection(name: @collection_name, configset: @configname)
       expect(coll.alias?).to be_falsey
     end
 
     it "throws an error if you try to create a collection with a bad configset" do
       expect {
-        @solr.create_collection(name: @collection_name, configset: "INVALID")
+        @server.create_collection(name: @collection_name, configset: "INVALID")
       }.to raise_error(SolrCloud::NoSuchConfigSetError)
     end
 
-    it "throws an error if you try to get admin for a non-existant collection" do
-      expect { @solr.collection("INVALID_COLLECTION_NAME") }.to raise_error(SolrCloud::NoSuchCollectionError)
+    it "returns nil if you try to get a non-existant collection with get_collection" do
+      expect(@server.get_collection("INVALID_COLLECTION_NAME")).to be_nil
+    end
+
+    it "returns an error if you try to get a non-existant collection with get_collection!" do
+      expect { @server.get_collection!("INVALID_COLLECTION_NAME") }.to raise_error(SolrCloud::NoSuchCollectionError)
+    end
+
+    it "can get its configset" do
+      coll = @server.create_collection(name: @collection_name, configset: @configname)
+      expect(coll.configset.name).to eq(@configname)
     end
 
     it "won't allow you to drop a configset in use" do
-      @solr.create_collection(name: @collection_name, configset: @configname)
-      expect { @solr.delete_configset @configname }.to raise_error(SolrCloud::ConfigSetInUseError)
+      @server.create_collection(name: @collection_name, configset: @configname)
+      expect { @server.delete_configset @configname }.to raise_error(SolrCloud::ConfigSetInUseError)
     end
 
     it "throws an error if you try to create it with an illegal name" do
       expect {
-        @solr.create_collection(name: "abc!", configset: @configname)
+        @server.create_collection(name: "abc!", configset: @configname)
       }.to raise_error(SolrCloud::IllegalNameError)
     end
   end
 
-  describe "collection object itself can manipulate itself" do
+  describe "collection object" do
     before(:all) do
       cleanout!
       @configname = rnd_configname
-      @solr = connection
-      @solr.create_configset(name: @configname, confdir: test_conf_dir, force: true)
+      @server = connection
+      @server.create_configset(name: @configname, confdir: test_conf_dir, force: true)
       @collection_name = rnd_collname
-      @collection = @solr.create_collection(name: @collection_name, configset: @configname)
+      @collection = @server.create_collection(name: @collection_name, configset: @configname)
     end
 
     after(:all) do
       @collection.delete!
-      @solr.delete_configset(@configname)
+      @server.delete_configset(@configname)
     end
 
     it "can check for aliveness" do
@@ -92,18 +101,18 @@ RSpec.describe SolrCloud::Collection do
 
     it "can find an alias pointing to itself" do
       a = @collection.alias_as(rnd_aliasname)
-      expect(@collection.alias(a.name).name).to eq(a.name)
+      expect(@collection.get_alias(a.name).name).to eq(a.name)
       a.delete!
     end
 
     it "can't find an non-existent alias" do
-      expect { @collection.alias("DOES_NOT_EXIST") }.to raise_error(SolrCloud::NoSuchAliasError)
+      expect(@collection.get_alias("DOES_NOT_EXIST")).to be_nil
     end
 
     it "doesn't return an alias that points to a different collection" do
-      other_collection = @solr.create_collection(name: rnd_collname, configset: @configname)
+      other_collection = @server.create_collection(name: rnd_collname, configset: @configname)
       a = other_collection.alias_as(rnd_aliasname)
-      expect { @collection.alias(a.name) }.to raise_error SolrCloud::NoSuchAliasError
+      expect(@collection.get_alias(a.name)).to be_nil
       a.delete!
       other_collection.delete!
     end
@@ -114,9 +123,9 @@ RSpec.describe SolrCloud::Collection do
     end
 
     it "can delete itself" do
-      coll = @solr.create_collection(name: rnd_collname, configset: @configname)
+      coll = @server.create_collection(name: rnd_collname, configset: @configname)
       coll.delete!
-      expect(@solr.collection_names).not_to include(coll.name)
+      expect(@server.collection_names).not_to include(coll.name)
       coll.delete!
     end
   end
@@ -124,22 +133,20 @@ RSpec.describe SolrCloud::Collection do
 
   describe "correctly forwards HTTP verbs" do
 
-    around(:all) do |ex|
-      @cs = connection.create_configset(name: rnd_configname, confdir: test_conf_dir, force: true)
-      ex.run
-      @cs.delete!
+    before(:all) do
+      @configset = connection.create_configset(name: rnd_configname, confdir: test_conf_dir, force: true)
     end
 
-    around(:example) do |ex|
-      @coll = connection.create_collection(name: rnd_collname, configset: @cs.name)
-      ex.run
-      @coll.delete!
+    after(:all) do
+      @configset.delete!
     end
 
     it "uploads and counts" do
-      expect(@coll.count).to be(0)
-      @coll.add({id: 1}).commit
-      expect(@coll.count).to be(1)
+      coll = connection.create_collection(name: rnd_collname, configset: @configset.name)
+      expect(coll.count).to be(0)
+      coll.add({id: 1}).commit
+      expect(coll.count).to be(1)
+      coll.delete!
     end
 
   end

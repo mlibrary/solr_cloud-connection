@@ -7,30 +7,6 @@ module SolrCloud
     # methods having to do with configsets, to be included by the connection object.
     # These are split out only to make it easier to deal with them.
     module ConfigsetAdmin
-      # Get a list of the already-defined configSets
-      # @return [Array<Configset>] possibly empty list of configSets
-      def configsets
-        configset_names.map { |cs| Configset.new(name: cs, connection: self) }
-      end
-
-      # @return [Array<String>] the names of the config sets
-      def configset_names
-        connection.get("api/cluster/configs").body["configSets"]
-      end
-
-      alias_method :configurations, :configsets
-
-      # Check to see if a configset is defined
-      # @param name [String] Name of the configSet
-      # @return [Boolean] Whether a configset with that name exists
-      def configset?(name)
-        configset_names.include? name.to_s
-      end
-
-      # Get an existing configset
-      def configset(name)
-        Configset.new(name: name, connection: self)
-      end
 
       # Given the path to a solr configuration "conf" directory (i.e., the one with
       # solrconfig.xml in it), zip it up and send it to solr as a new configset.
@@ -45,7 +21,7 @@ module SolrCloud
           raise IllegalNameError.new("'#{config_set_name}' is not a valid solr configset name. Use only ASCII letters/numbers, dash, and underscore")
         end
 
-        if configset?(config_set_name) && !force
+        if has_configset?(config_set_name) && !force
           raise WontOverwriteError.new("Won't replace configset #{config_set_name} unless 'force: true' passed ")
         end
         zfile = "#{Dir.tmpdir}/solr_add_configset_#{name}_#{Time.now.hash}.zip"
@@ -56,16 +32,43 @@ module SolrCloud
         end
         # TODO: Error check in here somewhere
         FileUtils.rm(zfile, force: true)
-        self.configset(name)
+        get_configset(name)
+      end
+
+      # Get a list of the already-defined configSets
+      # @return [Array<Configset>] possibly empty list of configSets
+      def configsets
+        configset_names.map { |cs| Configset.new(name: cs, connection: self) }
+      end
+
+      # @return [Array<String>] the names of the config sets
+      def configset_names
+        connection.get("api/cluster/configs").body["configSets"]
+      end
+
+      # Check to see if a configset is defined
+      # @param name [String] Name of the configSet
+      # @return [Boolean] Whether a configset with that name exists
+      def has_configset?(name)
+        configset_names.include? name.to_s
+      end
+
+      # Get an existing configset
+      def get_configset(name)
+        Configset.new(name: name, connection: self)
       end
 
       # Remove the configuration set with the given name. No-op if the
-      # configset doesn't actually exist. Use #configset? manually if you need to raise on does-not-exist
-      # @param [String,Symbol] name The name of the configuration set
+      # configset doesn't actually exist. Test with {#has_configset?} and
+      # {Configset#in_use?} manually if need be.
+      #
+      # In general, prefer using {Configset#delete!} instead of running everything
+      # through the connection object.
+      # @param [String] name The name of the configuration set
       # @raise [InUseError] if the configset can't be deleted because it's in use by a live collection
       # @return [Connection] self
       def delete_configset(name)
-        if configset? name
+        if has_configset? name
           connection.delete("api/cluster/configs/#{name}")
         end
         self
@@ -80,6 +83,8 @@ module SolrCloud
 
       # Pulled from the examples for rubyzip. No idea why it's not just a part
       # of the normal interface, but I guess I'm not one to judge.
+      #
+      # Code taken wholesale from https://github.com/rubyzip/rubyzip/blob/master/samples/example_recursive.rb
       class ZipFileGenerator
         # Initialize with the directory to zip and the location of the output archive.
         def initialize(input_dir, output_file)

@@ -5,10 +5,14 @@ module SolrCloud
     # methods having to do with aliases, to be included by the connection object.
     # These are split out only to make it easier to deal with them.
     module AliasAdmin
+
+      # A simple data-class to pair an alias with its collection
       AliasCollectionPair = Struct.new(:alias, :collection)
 
-      # Create an alias for the given collection name
-      # @todo allow an alias to point to more than one collection?
+      # Create an alias for the given collection name.
+      #
+      # In general, prefer {Collection#alias_as} instead of
+      # running everything through the connection object.
       # @param name [String] Name of the new alias
       # @param collection_name [String] name of the collection
       # @param force [Boolean] whether to overwrite an existing alias
@@ -18,24 +22,24 @@ module SolrCloud
         unless legal_solr_name?(name)
           raise IllegalNameError.new("'#{name}' is not a valid solr alias name. Use only ASCII letters/numbers, dash, and underscore")
         end
-        raise NoSuchCollectionError.new("Can't find collection #{collection_name}") unless collection?(collection_name)
-        if alias?(name) && !force
-          raise WontOverwriteError.new("Alias '#{name}' already points to collection '#{self.alias(name).collection.name}'; won't overwrite without force: true")
+        raise NoSuchCollectionError.new("Can't find collection #{collection_name}") unless has_collection?(collection_name)
+        if has_alias?(name) && !force
+          raise WontOverwriteError.new("Alias '#{name}' already points to collection '#{self.get_alias(name).collection.name}'; won't overwrite without force: true")
         end
         connection.get("solr/admin/collections", action: "CREATEALIAS", name: name, collections: collection_name)
-        self.alias(name)
+        get_alias(name)
       end
 
       # Is there an alias with this name?
       # @return [Boolean]
-      def alias?(name)
+      def has_alias?(name)
         alias_names.include? name
       end
 
       # List of alias objects
       # @return [Array<SolrCloud::Alias>] List of aliases
       def aliases
-        alias_map.values
+        alias_map.values.map(&:alias)
       end
 
       # List of alias names
@@ -44,28 +48,30 @@ module SolrCloud
         alias_map.keys
       end
 
-      # Get an alias object for the given name
+      # Get an alias object for the given name, erroring out if not found
+      # @param name [String] the name of the existing alias
+      # @return [Alias, nil] The alias if found, otherwise nil
+      def get_alias(name)
+        return nil unless has_alias?(name)
+        alias_map[name].alias
+      end
+
+      # Get an alias object for the given name, erroring out if not found
       # @param name [String] the name of the existing alias
       # @raise [SolrCloud::NoSuchAliasError] if it doesn't exist
       # @return [SolrCloud::Alias]
-      def alias(name)
-        am = alias_map
-        raise NoSuchAliasError unless am[name]
-        am[name]
-      end
-
-      # Get the collection associated with an alias
-      # @param name [String] alias name
-      # @return [Collection] collection associated with the alias
-      def collection_for_alias(name)
-        Collection.new(name: raw_alias_map[name], connection: self)
+      def get_alias!(name)
+        raise NoSuchAliasError unless has_alias?(name)
+        get_alias(name)
       end
 
       # Get the aliases and create a map of the form AliasName -> AliasObject
       # @return [Hash<String,Alias>] A hash mapping alias names to alias objects
       def alias_map
         raw_alias_map.keys.each_with_object({}) do |alias_name, h|
-          h[alias_name] = SolrCloud::Alias.new(name: alias_name, connection: self)
+          a = Alias.new(name: alias_name, connection: self)
+          c = Collection.new(name: raw_alias_map[alias_name], connection: self)
+          h[alias_name] = AliasCollectionPair.new(a, c)
         end
       end
 
@@ -77,3 +83,5 @@ module SolrCloud
     end
   end
 end
+
+

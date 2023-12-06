@@ -65,7 +65,7 @@ module SolrCloud
     # @param user [String] username for basic auth, if you're using it
     # @param password [String] password for basic auth, if you're using it
     # @param logger [#info, :off, nil] An existing logger to pass in. The symbol ":off" means
-    # don't do logging. If left undefined, will create a standard ruby logger to $stdout
+    #   don't do logging. If left undefined, will create a standard ruby logger to $stdout
     # @param adapter [Symbol] The underlying http library to use within Faraday
     def initialize(url:, user: nil, password: nil, logger: nil, adapter: :httpx)
       @url = url
