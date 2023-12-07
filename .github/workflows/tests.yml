@@ -29,12 +29,12 @@ jobs:
         run: docker compose ps
       - name: wait for solr
         run: |
-          STATUS=$(curl -I  http://solr:SolrRocks@127.0.0.1:8983/solr 2>/dev/null | head -n 1 | cut -d$' ' -f2)
+          STATUS=$(curl -I  http://solr:SolrRocks@127.0.0.1:9090/solr 2>/dev/null | head -n 1 | cut -d$' ' -f2)
           echo $STATUS
           while [[ $STATUS -ne 302 ]]
           do
             sleep 1  
-            STATUS=$(curl -I  http://solr:SolrRocks@127.0.0.1:8983/solr 2>/dev/null | head -n 1 | cut -d$' ' -f2)
+            STATUS=$(curl -I  http://solr:SolrRocks@127.0.0.1:9090/solr 2>/dev/null | head -n 1 | cut -d$' ' -f2)
             echo $STATUS
           done
       - name: Set up Ruby 3.2
