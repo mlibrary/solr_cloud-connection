@@ -57,7 +57,9 @@ RSpec.describe SolrCloud::Connection do
       expect(@server.legal_solr_name?("füdgüd")).to be_falsey
       expect(@server.legal_solr_name?("abc!123")).to be_falsey
       expect(@server.legal_solr_name?("abc|123")).to be_falsey
-      expect(@server.legal_solr_name?("_abc")).to be_falsey
+      expect(@server.legal_solr_name?("abc.123")).to be_truthy
+      expect(@server.legal_solr_name?("_abc")).to be_truthy
+      expect(@server.legal_solr_name?("-abc")).to be_falsey
     end
   end
 end
