@@ -178,7 +178,7 @@ module SolrCloud
     # @param str [String] string to check
     # @return [Boolean]
     def legal_solr_name?(str)
-      !(/[^a-zA-Z_\-0-9]/.match?(str) or str.start_with?("_"))
+      !(/[^a-zA-Z_\-.0-9]/.match?(str) or str.start_with?("_"))
     end
 
     def inspect
@@ -192,5 +192,6 @@ module SolrCloud
     end
   end
 end
+
 
 
