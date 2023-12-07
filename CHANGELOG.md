@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.0] - 2023-12-07
+- Fixed rules about what names are legal collections/configsets/aliases
+- Update version and changelog
+
 ## [0.3.0] - 2023-12-06
 
 - Major overhaul of the interface to use more-explicit and less-confusing method names
