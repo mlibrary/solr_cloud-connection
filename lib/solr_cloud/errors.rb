@@ -10,6 +10,8 @@ module SolrCloud
 
   class WontOverwriteError < RuntimeError; end
 
+  class AliasAlreadyDefinedError < RuntimeError; end
+
   class ConfigSetInUseError < RuntimeError; end
 
   class CollectionAliasedError < RuntimeError; end

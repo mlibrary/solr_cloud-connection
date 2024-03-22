@@ -33,6 +33,8 @@ module SolrCloud
       connection.only_collections.select { |coll| coll.configset.name == name }
     end
 
+    alias_method :collections, :used_by
+
     # Are there any collections currently using this configset?
     # @return [Boolean]
     def in_use?

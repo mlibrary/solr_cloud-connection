@@ -22,7 +22,7 @@ a collections that's pointed to by an alias.
 ## Caveats
 
 * At this point the API is unstable
-* Performance is desperately, hilariously terrible. Solr has no sense of an atomic action and plenty of other ways
+*  Solr has no sense of an atomic action and plenty of other ways
   (e.g, the admin interface) to mess with things, so nothing is cached. 
   This means that individual actions can involve several round-trips to solr. If you're doing so much admin
   that this becomes a bottleneck, you're well outside this gem's target case.
@@ -34,70 +34,170 @@ a collections that's pointed to by an alias.
 The code below covers all the basics. See the docs for full sets of parameters, which errors are
 thrown, etc. 
 
+
+### Create a connection to the server
+
 ```ruby
+url = "http://localhost:9090/"
+user = "solr"
+password = "SolrRocks"
+config_directory = "/path/to/myconfig/conf" # Directory 'conf' contains solrconfig.xml
 
-require "solr_cloud/connection"
+server = SolrCloud::Connection.new(url: url, user: user, password: pass) 
+  #=> <SolrCloud::Connection http://localhost:9090>
 
-server = SolrCloud::connect.new(url: "http://localhost:8023", username: "user", password: "password")
-#    #=> <SolrCloud::Connection http://localhost:8023/>
+  # or bring your own Faraday object
+  # server2 = SolrCloud::Connection.new_with_faraday(faraday_connection)
 
-# or bring your own Faraday object
-# server = SolrCloud::connect.new_with_faraday(faraday_connection)
+  ### Get some basic info
 
+server.version_string #=> "8.11.2"
+server.cloud? #=> true
+server.mode #=> "solrcloud"
+```
+
+### Configsets
+```ruby
+# List the configsets
+server.configsets #=> [<SolrCloud::Configset '_default' at http://localhost:9090>]
+
+# Sometimes you just want the names.
 server.configset_names #=> ["_default"]
-default = server.get_configset("_default") #=> <SolrCloud::Configset '_default' at http://localhost:8983>
 
-# Create a new one by taking a directory, zipping it up, and sending it to solr
-cset = server.create_configset(name: "my_awesome_configset_for_cars", confdir: "/path/to/mycore/conf")
-server.configset_names #=> ["_default", "my_awesome_configset_for_cars"]
+# Create a new configset by taking a conf directory, zipping it up,
+# and sending it to solr
+cset = server.create_configset(name: "horseless", confdir: config_directory) #=> <SolrCloud::Configset 'horseless' at http://localhost:9090>
+server.configset_names #=> ["_default", "horseless"]
 
-# That's a dumb name. We'll try again.
-cset.delete!
-cset = server.create_configset(name: "cars_config", confdir: "/path/to/mycore/conf")
+# That's a dumb name for a config set. Delete it and try again.
+cset.delete! #=> <SolrCloud::Connection http://localhost:9090>
+cset = server.create_configset(name: "cars_cfg", confdir: config_directory) #=> <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>
+server.configsets #=> [<SolrCloud::Configset '_default' at http://localhost:9090>, <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>]
 
-# Collections and aliases are mostly treated the same
-server.collection_names #=> ["cars_v1", "cars_v2", "cars"] -- collections AND aliases
-server.only_collection_names #=> ["cars_v1", "cars_v2"]
-server.alias_names #=> ["cars"]
+# Can't be overwritten by accident
+server.create_configset(name: "cars_cfg", confdir: config_directory) #=> raised #<SolrCloud::WontOverwriteError: Won't replace configset cars_cfg unless 'force: true' passed >
 
-typo = server.get_collection("cars__V2") #=> nil, doesn't exist
-cars_v2 = server.get_collection("cars_v2")
+# But you can force it
+server.create_configset(name: "cars_cfg", confdir: config_directory, force: true) #=> <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>
 
-cars_v2.alive? #=> true
-cars_v2.count #=> 133 -- we're assuming there's stuff in it.
+cfg = server.get_configset("cars_cfg") #=> <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>
+cfg.in_use? #=> false
 
+```
 
-# Find out about its aliases, if any
-cars_v2.alias? #=> false. It's a true collection
-cars_v2.aliased? #=> true
-cars_v2.aliases #=> [<SolrCloud::Alias "cars" (alias of "cars_v2")> ]
-cars_v2.has_alias?("cars") #=> true
+### Collections
 
-cars_v2.delete! #=> SolrCloud::CollectionAliasedError: Collection 'cars_v2' can't be deleted; it's in use by aliases ["cars"]
+```ruby
+# Now create a collection based on an already-existing configset
+cars_v1 = server.create_collection(name: "cars_v1", configset: "cars_cfg") 
+  #=> <SolrCloud::Collection 'cars_v1'>
+server.collections #=> [<SolrCloud::Collection 'cars_v1'>]
+server.collection_names #=> ["cars_v1"]
 
-# Make a new collection
-cars_v3 = server.create_collection(name: "cars_v3", configset: "cars_config")
-cars_v3.aliased? #=> false
-cars_v3.count #=> 0
-cars_v3.configset #=> <SolrCloud::Configset 'cars_config' at http://localhost:8023>
+# Check it out quick
+cars_v1.alive? #=> "OK"
+cars_v1.healthy? #=> true
+cars_v1.count #=> 0
 
-# Work directly with an alias as if it's a collection
-cars = server.get_collection("cars")
-cars.alias? #=> true
+# Any aliases
+cars_v1.aliased? #=> false
+cars_v1.aliases #=> []
+
+# Its configset
+cars_v1.configset #=> <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>
+
+# Commit anything that's been added
+cars_v1.commit #=> <SolrCloud::Collection 'cars_v1'>
+
+# Solr knows when a configset is in use, and won't delete it
+
+cfg.delete! 
+    #=> raised #<SolrCloud::ConfigSetInUseError: Can not delete ConfigSet 
+    # as it is currently being used by collection [cars_v1]>
+
+```
+
+### Aliases
+
+```ruby
+# We'll want to alias it so we can just use 'cars'
+cars = cars_v1.alias_as("cars") #=> <SolrCloud::Alias 'cars' (alias of 'cars_v1')>
+cars_v1.alias? #=> false
+cars_v1.aliased? #=> true
+
+cars_v1.has_alias?("cars") #=> true
+cars_v1.alias_as("autos") #=> <SolrCloud::Alias 'autos' (alias of 'cars_v1')>
+cars_v1.aliases #=> [<SolrCloud::Alias 'cars' (alias of 'cars_v1')>, <SolrCloud::Alias 'autos' (alias of 'cars_v1')>]
+
+cars_v1.get_alias("autos").delete! #=> <SolrCloud::Connection http://localhost:9090>
+cars_v1.aliases #=> [<SolrCloud::Alias 'cars' (alias of 'cars_v1')>]
+
+# There's syntactic sugar for switching out aliases
+cars_v2 = server.create_collection(name: "cars_v2", configset: "cars_cfg") #=> <SolrCloud::Collection 'cars_v2'>
+cars = server.get_alias("cars") #=> <SolrCloud::Alias 'cars' (alias of 'cars_v1')>
+
+cars.collection #=> <SolrCloud::Collection 'cars_v1' (aliased by 'cars')>
+cars.switch_collection_to("cars_v2") #=> <SolrCloud::Alias 'cars' (alias of 'cars_v2')>
 cars.collection #=> <SolrCloud::Collection 'cars_v2' (aliased by 'cars')>
+cars_v1.aliases #=> []
+cars_v2.aliases #=> [<SolrCloud::Alias 'cars' (alias of 'cars_v2')>]
 
-# Make a new alias to v2
-old_cars = cars_v2.alias_as("old_cars") #=> <SolrCloud::Alias "old_cars" (alias of "cars_v2")>
-cars_v2.aliases #=> [<SolrCloud::Alias "cars" (alias of "cars_v2")>, <SolrCloud::Alias "old_cars" (alias of "cars_v2")>]
+# Aliases will swap from collection to collection without warning
+cars_v1.alias_as("cars") #=> <SolrCloud::Alias 'cars' (alias of 'cars_v1')>
 
-# Now lets point the "cars" alias at cars_v3
-cars.switch_collection_to cars_v3
+# ...unless you use the bang(!) version
+cars_v2.alias_as!("cars") #=> raised #<SolrCloud::AliasAlreadyDefinedError: Alias cars already points to cars_v1>
 
-cars.collection.name #=> "cars_v3"
-cars_v2.alias_names #=> ["old_cars"]
+# You can also just switch it from the alias itself.
+cars.switch_collection_to("cars_v1") #=> <SolrCloud::Alias 'cars' (alias of 'cars_v1')>
 
-# cars_v1 isn't doing anything for us anymore. Ditch it.
-cars_v1.delete!
+# Aliases show up as "collections" so you can just use them interchangeably
+server.collection_names #=> ["cars_v1", "cars_v2", "cars"]
+
+# They even == to each other
+cars #=> <SolrCloud::Alias 'cars' (alias of 'cars_v1')>
+cars == cars_v1 #=> true
+cars == cars_v2 #=> false
+
+# But sometimes you want to differentiate them from each other
+server.only_collection_names #=> ["cars_v1", "cars_v2"]
+cars.alias? #=> true
+cars_v1.alias? #=> false
+
+cars.collection #=> <SolrCloud::Collection 'cars_v1' (aliased by 'cars')>
+
+```
+
+### Accessing objects from other objects
+
+```ruby
+# You can grab existing collections/aliases/configsets from the server
+# as well as when they're returned by a create_* statement
+cv1 = server.get_collection("cars_v1") #=> <SolrCloud::Collection 'cars_v1' (aliased by 'cars')>
+cars = server.get_collection("cars") #=> <SolrCloud::Alias 'cars' (alias of 'cars_v1')>
+
+# get_* methods might return nil
+typo = "cars_V1" #=> "cars_V1"
+server.has_collection?(typo) #=> false
+dne = server.get_collection(typo) #=> nil
+
+# get_*! methods will throw an error
+dne = server.get_collection!(typo) #=> raised #<SolrCloud::NoSuchCollectionError: Collection 'cars_V1' not found>
+
+# alias#collection returns the underlying collection.
+# collection#collection returns itself. This makes it easier to
+# write code without differentiating between them.
+
+cars.collection #=> <SolrCloud::Collection 'cars_v1' (aliased by 'cars')>
+cars_v1.collection #=> <SolrCloud::Collection 'cars_v1' (aliased by 'cars')>
+
+# Configsets, Aliases, and Collections know how they're related
+
+cars_v1.aliases #=> [<SolrCloud::Alias 'cars' (alias of 'cars_v1')>]
+cars = cars_v1.get_alias("cars") #=> <SolrCloud::Alias 'cars' (alias of 'cars_v1')>
+cfg = cars.configset #=> <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>
+cfg.collections #=> [<SolrCloud::Collection 'cars_v1' (aliased by 'cars')>, <SolrCloud::Collection 'cars_v2'>]
+
 
 ```
 
@@ -126,4 +226,5 @@ This repository is set up to run tests under docker.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/mlibrary/solr_cloud-connection.
+Bugs, functionality suggestions, API suggestions, feature requests, etc. all welcom
+on GitHub at https://github.com/mlibrary/solr_cloud-connection.

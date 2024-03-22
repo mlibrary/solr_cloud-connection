@@ -7,7 +7,6 @@ module SolrCloud
   # A Collection provides basic services on the collection -- checking its health,
   # creating or reporting aliases, and deleting itself.
   class Collection
-
     extend Forwardable
 
     # Forward the HTTP verbs to the  underlying connection
@@ -50,6 +49,19 @@ module SolrCloud
       @sp = "/solr/#{name}"
     end
 
+    def collection
+      self
+    end
+
+    def ==(other)
+      case other
+        when SolrCloud::Collection
+          self.collection.name == other.collection.name
+        else
+          false
+      end
+    end
+
     # Delete this collection. Will no-op if the collection somehow doesn't still exist (because it was
     # deleted via a different method, such as through the API)
     # @return [Connection] The connection object used to create this collection object
@@ -73,6 +85,8 @@ module SolrCloud
     rescue Faraday::ResourceNotFound
       false
     end
+
+    alias_method :ping, :alive?
 
     # Is this an alias?
     # Putting this in here breaks all sorts of isolation principles,
@@ -134,6 +148,13 @@ module SolrCloud
     # @return [SolrCloud::Alias]
     def alias_as(alias_name, force: true)
       connection.create_alias(name: alias_name, collection_name: name, force: true)
+    end
+
+    def alias_as!(alias_name)
+      if connection.has_alias?(alias_name)
+        raise AliasAlreadyDefinedError.new("Alias #{alias_name} already points to #{connection.get_alias(alias_name).collection.name}")
+      end
+      alias_as(alias_name, force: false)
     end
 
     # Send a commit (soft if unspecified)
