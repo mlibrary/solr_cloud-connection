@@ -2,13 +2,19 @@
 
 Do basic administrative tasks on a running Solr cloud instance, including:
 
-* create (i.e., upload) a configSet when given a `conf` directory
-* list, create, and delete configsets, collections, and aliases
-* get basic version information for the running solr
-* check on the health of individual collections
-* treat an alias (mostly) as a collection
-* TODO automatically generate methods to talk to defined requestHandlers
-* TODO Add something useful for configsets to do
+* [x] create (i.e., upload) a configSet when given a `conf` directory
+* [x] list, create, and delete configsets, collections, and aliases
+* [x] get basic version information for the running solr
+* [x] check on the health of individual collections
+* [x] treat an alias (mostly) as a collection
+* [ ] automatically generate methods to talk to defined requestHandlers and updateHandlers
+* [ ] provide a way to talk to the analyzer for testing of fieldTypes
+* [ ] hook into the schema API
+* [ ] allow it to work with cores, and not just solrcloud collections (which, you know bad naming then)
+* [ ] figure out how to deal with managed resources
+* [ ] get info from updateHandler metrics, esp. pending documents and cumulative errors
+* [ ] hook into performance metrics for easy reporting and checks
+* [ ] support more of the v2 API 
 
 In almost all cases, you can treat an alias to a collection like the underlying collection. 
 
@@ -43,6 +49,8 @@ user = "solr"
 password = "SolrRocks"
 config_directory = "/path/to/myconfig/conf" # Directory 'conf' contains solrconfig.xml
 
+require "solr_cloud/connection"
+
 server = SolrCloud::Connection.new(url: url, user: user, password: pass) 
   #=> <SolrCloud::Connection http://localhost:9090>
 
@@ -66,19 +74,25 @@ server.configset_names #=> ["_default"]
 
 # Create a new configset by taking a conf directory, zipping it up,
 # and sending it to solr
-cset = server.create_configset(name: "horseless", confdir: config_directory) #=> <SolrCloud::Configset 'horseless' at http://localhost:9090>
+cset = server.create_configset(name: "horseless", confdir: config_directory)
+  #=> <SolrCloud::Configset 'horseless' at http://localhost:9090>
 server.configset_names #=> ["_default", "horseless"]
 
 # That's a dumb name for a config set. Delete it and try again.
 cset.delete! #=> <SolrCloud::Connection http://localhost:9090>
-cset = server.create_configset(name: "cars_cfg", confdir: config_directory) #=> <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>
-server.configsets #=> [<SolrCloud::Configset '_default' at http://localhost:9090>, <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>]
+cset = server.create_configset(name: "cars_cfg", confdir: config_directory)
+  #=> <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>
+server.configsets
+  #=> [<SolrCloud::Configset '_default' at http://localhost:9090>,
+  #    <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>]
 
 # Can't be overwritten by accident
-server.create_configset(name: "cars_cfg", confdir: config_directory) #=> raised #<SolrCloud::WontOverwriteError: Won't replace configset cars_cfg unless 'force: true' passed >
+server.create_configset(name: "cars_cfg", confdir: config_directory)
+  #=> raised #<SolrCloud::WontOverwriteError: Won't replace configset cars_cfg unless 'force: true' passed >
 
 # But you can force it
-server.create_configset(name: "cars_cfg", confdir: config_directory, force: true) #=> <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>
+server.create_configset(name: "cars_cfg", confdir: config_directory, force: true)
+  #=> <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>
 
 cfg = server.get_configset("cars_cfg") #=> <SolrCloud::Configset 'cars_cfg' at http://localhost:9090>
 cfg.in_use? #=> false
@@ -127,7 +141,8 @@ cars_v1.aliased? #=> true
 
 cars_v1.has_alias?("cars") #=> true
 cars_v1.alias_as("autos") #=> <SolrCloud::Alias 'autos' (alias of 'cars_v1')>
-cars_v1.aliases #=> [<SolrCloud::Alias 'cars' (alias of 'cars_v1')>, <SolrCloud::Alias 'autos' (alias of 'cars_v1')>]
+cars_v1.aliases
+  #=> [<SolrCloud::Alias 'cars' (alias of 'cars_v1')>, <SolrCloud::Alias 'autos' (alias of 'cars_v1')>]
 
 cars_v1.get_alias("autos").delete! #=> <SolrCloud::Connection http://localhost:9090>
 cars_v1.aliases #=> [<SolrCloud::Alias 'cars' (alias of 'cars_v1')>]
@@ -226,5 +241,5 @@ This repository is set up to run tests under docker.
 
 ## Contributing
 
-Bugs, functionality suggestions, API suggestions, feature requests, etc. all welcom
+Bugs, functionality suggestions, API suggestions, feature requests, etc. all welcome
 on GitHub at https://github.com/mlibrary/solr_cloud-connection.
