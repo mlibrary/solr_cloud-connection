@@ -1,6 +1,22 @@
 # SolrCloud::Connection
 
-Do basic administrative tasks on a running Solr cloud instance, including:
+## Common usage
+
+```ruby
+
+# Connect to the server, upload a config set, make a collection based on it,
+# and make an alias pointing to that collection
+
+server = SolrCloud::Connection.new(url: url, user: user, password: pass) 
+cfg = server.create_configset(name: "my_cfg", confdir: "/path/to/my/conf")
+cars_v1 = server.create_collection(name: "cars_v1", configset: "my_cfg")
+cars = cars_v1.alias_as("cars")
+
+```
+
+## Basic functionality / Roadmap
+
+Do basic administrative tasks on a running Solr cloud instance
 
 * [x] create (i.e., upload) a configSet when given a `conf` directory
 * [x] list, create, and delete configsets, collections, and aliases
@@ -40,19 +56,6 @@ a collections that's pointed to by an alias.
 The code below covers all the basics. See the docs for full sets of parameters, which errors are
 thrown, etc. 
 
-### Common usage
-
-```ruby
-
-# Connect to the server, upload a config set, make a collection based on it,
-# and make an alias pointing to that collection
-
-server = SolrCloud::Connection.new(url: url, user: user, password: pass) 
-cfg = server.create_configset(name: "my_cfg", confdir: "/path/to/my/conf")
-cars_v1 = server.create_collection(name: "cars_v1", configset: "my_cfg")
-cars = cars_v1.alias_as("cars")
-
-```
 
 ### Create a connection to the server
 
