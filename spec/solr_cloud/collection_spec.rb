@@ -130,9 +130,7 @@ RSpec.describe SolrCloud::Collection do
     end
   end
 
-
   describe "correctly forwards HTTP verbs" do
-
     before(:all) do
       @configset = connection.create_configset(name: rnd_configname, confdir: test_conf_dir, force: true)
     end
@@ -148,6 +146,5 @@ RSpec.describe SolrCloud::Collection do
       expect(coll.count).to be(1)
       coll.delete!
     end
-
   end
 end

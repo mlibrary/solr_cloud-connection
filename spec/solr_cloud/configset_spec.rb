@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe SolrCloud::Configset do
-
   before(:all) do
     verify_test_environment!
     cleanout!
@@ -70,6 +69,5 @@ RSpec.describe SolrCloud::Configset do
       expect(@cset.in_use?).to be_truthy
       coll.delete!
     end
-
   end
 end

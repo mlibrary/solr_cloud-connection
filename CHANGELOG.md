@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0] - 2025-03-24
+- Added some sugar for unifying aliases and collections
+- Update tests
+- Better errors
+- Flesh out README.md to be a useful document
+
+
 ## [0.4.0] - 2023-12-07
 - Fixed rules about what names are legal collections/configsets/aliases
 - Update version and changelog

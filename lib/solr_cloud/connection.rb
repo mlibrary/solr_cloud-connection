@@ -72,13 +72,13 @@ module SolrCloud
       @user = user
       @password = password
       @logger = case logger
-                  when :off, :none
-                    Logger.new(File::NULL, level: Logger::FATAL)
-                  when nil
-                    Logger.new($stderr, level: Logger::WARN)
-                  else
-                    logger
-                end
+      when :off, :none
+        Logger.new(File::NULL, level: Logger::FATAL)
+      when nil
+        Logger.new($stderr, level: Logger::WARN)
+      else
+        logger
+      end
       @connection = create_raw_connection(url: url, adapter: adapter, user: user, password: password, logger: @logger)
       bail_if_incompatible!
       @logger.info("Connected to supported solr at #{url}")
@@ -96,7 +96,7 @@ module SolrCloud
     # Create a Faraday connection object to base the API client off of
     # @see #initialize
     def create_raw_connection(url:, adapter: :httpx, user: nil, password: nil, logger: nil)
-      Faraday.new(request: { params_encoder: Faraday::FlatParamsEncoder }, url: URI(url)) do |faraday|
+      Faraday.new(request: {params_encoder: Faraday::FlatParamsEncoder}, url: URI(url)) do |faraday|
         faraday.use Faraday::Response::RaiseError
         faraday.request :url_encoded
         if user
@@ -112,9 +112,6 @@ module SolrCloud
       end
     end
 
-    # Allow accessing the raw_connection via "connection". Yes, connection.connection
-    # can be confusing, but it makes the *_admin stuff easier to read.
-    alias_method :connection, :connection
 
     # Check to see if we can actually talk to the solr in question
     # raise [UnsupportedSolr] if the solr version isn't at least 8
@@ -192,6 +189,3 @@ module SolrCloud
     end
   end
 end
-
-
-

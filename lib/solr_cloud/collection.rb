@@ -55,10 +55,10 @@ module SolrCloud
 
     def ==(other)
       case other
-        when SolrCloud::Collection
-          self.collection.name == other.collection.name
-        else
-          false
+      when SolrCloud::Collection
+        collection.name == other.collection.name
+      else
+        false
       end
     end
 
@@ -68,7 +68,7 @@ module SolrCloud
     def delete!
       return connection unless exist?
       raise CollectionAliasedError.new("Cannot delete collection #{name}; it has alias(s) #{alias_names.join(", ")}") if aliased?
-      connection.get("solr/admin/collections", { action: "DELETE", name: name })
+      connection.get("solr/admin/collections", {action: "DELETE", name: name})
       connection
     end
 
@@ -181,10 +181,10 @@ module SolrCloud
 
     def add(docs)
       docarray = if docs === Array
-                   docs
-                 else
-                   [docs]
-                 end
+        docs
+      else
+        [docs]
+      end
       post("solr/#{name}/update/") do |r|
         r.body = docarray
       end
@@ -200,10 +200,10 @@ module SolrCloud
     def inspect
       anames = alias_names
       astring = if anames.empty?
-                  ""
-                else
-                  " (aliased by #{anames.map { |x| "'#{x}'" }.join(", ")})"
-                end
+        ""
+      else
+        " (aliased by #{anames.map { |x| "'#{x}'" }.join(", ")})"
+      end
       "<#{self.class} '#{name}'#{astring}>"
     end
 

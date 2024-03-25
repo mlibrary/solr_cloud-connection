@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "pathname"
 $LOAD_PATH.unshift Pathname.new(__dir__) + "lib"
 require_relative "lib/solr_cloud/connection"
@@ -7,13 +8,11 @@ url = "http://localhost:9090"
 user = "solr"
 pass = "SolrRocks"
 
-
 server = SolrCloud::Connection.new(url: url, user: user, password: pass) #=>
 
-
-server.aliases.each {|a| a.delete!}
-server.collections.each {|c| c.delete!}
-server.configsets.reject {|c| c.name == "_default"}.each {|c| c.delete!}
+server.aliases.each { |a| a.delete! }
+server.collections.each { |c| c.delete! }
+server.configsets.reject { |c| c.name == "_default" }.each { |c| c.delete! }
 
 # or bring your own Faraday object
 # server2 = SolrCloud::Connection.new_with_faraday(faraday_connection)
@@ -83,8 +82,6 @@ begin
 rescue
 end
 
-
-
 ##### Aliases
 
 # We'll want to alias it so we can just use 'cars'
@@ -125,9 +122,6 @@ cars.switch_collection_to("cars_v1")
 server.collection_names
 
 # They even == to each other
-cars
-cars == cars_v1
-cars == cars_v2
 
 # But sometimes you want to differentiate them from each other
 server.only_collection_names

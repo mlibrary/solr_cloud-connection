@@ -7,7 +7,6 @@ module SolrCloud
   # throw an error if that's an illegal operation (because a collection is
   # using it)
   class Configset
-
     # @return [String] the name of this configset
     attr_reader :name
 

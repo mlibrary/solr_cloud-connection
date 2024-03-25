@@ -64,7 +64,6 @@ RSpec.describe SolrCloud::Alias do
     expect(@server.get_alias("NOSUCHALIAS")).to be_nil
   end
 
-
   it "can reset its collection with a collection object" do
     a = @server.create_alias(name: rnd_aliasname, collection_name: @collection.name)
     expect(a.collection.name).to eq(@collection.name)

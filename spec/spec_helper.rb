@@ -52,8 +52,8 @@ end
 # Clean out whatever's left over from the last run of failed tests. Need to do aliases then
 # collections then configsets due to possible dependencies.
 def cleanout!
-  connection.aliases.select{|c| c.name.start_with?("rspec_alias")}.each(&:delete!)
-  connection.collections.select{|c| c.name.start_with?("rspec_collection")}.each(&:delete!)
+  connection.aliases.select { |c| c.name.start_with?("rspec_alias") }.each(&:delete!)
+  connection.collections.select { |c| c.name.start_with?("rspec_collection") }.each(&:delete!)
   connection.configset_names.select { |x| x.start_with?("rspec_config_") }.each do |cs|
     connection.delete_configset(cs)
   end

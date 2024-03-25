@@ -10,7 +10,7 @@ require "standard/rake"
 task default: %i[spec standard docs]
 task docs: %i[yard]
 
-require 'yard'
+require "yard"
 
 YARD::Rake::YardocTask.new do |t|
   t.files = ["lib/**/*.rb"] # optional

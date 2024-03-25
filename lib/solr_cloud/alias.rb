@@ -41,13 +41,13 @@ module SolrCloud
     # @return [Collection] the now-current collection
     def switch_collection_to(coll)
       collect_name = case coll
-                       when String
-                         coll
-                       when Collection
-                         coll.name
-                       else
-                         raise "Alias#switch_collection_to only takes a name(string) or a collection, not '#{coll}'"
-                     end
+      when String
+        coll
+      when Collection
+        coll.name
+      else
+        raise "Alias#switch_collection_to only takes a name(string) or a collection, not '#{coll}'"
+      end
       raise NoSuchCollectionError unless connection.has_collection?(collect_name)
       connection.create_alias(name: name, collection_name: collect_name, force: true)
     end

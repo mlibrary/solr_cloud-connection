@@ -20,17 +20,16 @@ module SolrCloud
       # @raise [WontOverwriteError] if the collection already exists
       # @return [Collection] the collection created
       def create_collection(name:, configset:, shards: 1, replication_factor: 1)
-
         unless legal_solr_name?(name)
           raise IllegalNameError.new("'#{name}' is not a valid solr name. Use only ASCII letters/numbers, dash, and underscore")
         end
 
         configset_name = case configset
-                           when Configset
-                             configset.name
-                           else
-                             configset.to_s
-                         end
+        when Configset
+          configset.name
+        else
+          configset.to_s
+        end
         raise WontOverwriteError.new("Collection #{name} already exists") if has_collection?(name)
         raise NoSuchConfigSetError.new("Configset '#{configset_name}' doesn't exist") unless has_configset?(configset_name)
 

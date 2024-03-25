@@ -34,16 +34,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency "httpx", "~>1.0"
   spec.add_dependency "rubyzip", "~>2.0"
 
-  spec.add_development_dependency "pry"
+  # spec.add_development_dependency "pry"
 
-  spec.add_development_dependency "dotenv"
-  spec.add_development_dependency "standard"
-  spec.add_development_dependency "simplecov"
-  spec.add_development_dependency "yard"
+  spec.add_development_dependency "dotenv", "~>3.0"
+  spec.add_development_dependency "standard", ">=1.35.0"
+  spec.add_development_dependency "simplecov", ">=0.22.0"
+  spec.add_development_dependency "yard", ">=0.9.0"
 
-  # Uncomment to register a new dependency of your gem
-  # spec.add_dependency "example-gem", "~> 1.0"
-
-  # For more information and examples about making a new gem, check out our
-  # guide at: https://bundler.io/guides/creating_gem.html
 end

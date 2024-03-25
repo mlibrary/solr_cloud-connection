@@ -7,7 +7,6 @@ module SolrCloud
     # methods having to do with configsets, to be included by the connection object.
     # These are split out only to make it easier to deal with them.
     module ConfigsetAdmin
-
       # Given the path to a solr configuration "conf" directory (i.e., the one with
       # solrconfig.xml in it), zip it up and send it to solr as a new configset.
       # @param name [String] Name to give the new configset
