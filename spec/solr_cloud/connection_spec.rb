@@ -23,7 +23,7 @@ RSpec.describe SolrCloud::Connection do
       c = SolrCloud::Connection.new(url: test_url, user: test_user, password: test_password)
       expect(c.password).to eq(test_password)
     end
-    
+
     describe "logger" do
       it "gets a standard logger" do
         c = SolrCloud::Connection.new(url: test_url, user: test_user, password: test_password)
