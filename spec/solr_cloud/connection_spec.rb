@@ -14,6 +14,16 @@ RSpec.describe SolrCloud::Connection do
   end
 
   describe "creating" do
+    it "knows the uysername" do
+      c = SolrCloud::Connection.new(url: test_url, user: test_user, password: test_password)
+      expect(c.user).to eq(test_user)
+    end
+
+    it "knows the password" do
+      c = SolrCloud::Connection.new(url: test_url, user: test_user, password: test_password)
+      expect(c.password).to eq(test_password)
+    end
+
     describe "logger" do
       it "gets a standard logger" do
         c = SolrCloud::Connection.new(url: test_url, user: test_user, password: test_password)
