@@ -16,9 +16,10 @@ require_relative "errors"
 require "forwardable"
 
 class DumbCache
-  def initialize(raw_connection)
+  def initialize(raw_connection, logger: Logger.new($stderr))
     @cache = {}
     @raw_connection = raw_connection
+    @logger = logger
   end
 
   def []=(url, resp)
@@ -36,19 +37,22 @@ class DumbCache
   def clear
     @cache.replace({})
   end
-  LOGGER = Logger.new("output.txt")
 
   def get(url, **kwargs)
     if kwargs.any?
-      url = url + "?" + kwargs.join("=")
-    end
-    if @cache.has_key? url
-      LOGGER.warn "Cache hit: #{url}"
-      @cache[url]
+      key = url + "?" + kwargs.join("=")
     else
-      LOGGER.warn "Cache miss: #{url}"
+      key = url
+    end
+    
+    if @cache.has_key? key
+      @logger.info "Cache hit: #{url}"
+      raise "Got one: #{url}"
+      @cache[key]
+    else
+      @logger.info "Cache miss: #{url}"
       resp = @raw_connection.get(url, **kwargs)
-      @cache[url] = resp
+      @cache[key] = resp
       resp
     end
   end
@@ -128,7 +132,7 @@ module SolrCloud
                 end
       @connection = create_raw_connection(url: url, adapter: adapter, user: user, password: password, logger: @logger)
       # bail_if_incompatible!
-      @http_cache = DumbCache.new(@connection)
+      @http_cache = DumbCache.new(@connection, logger: @logger)
       @logger.info("Connected to supported solr at #{url}")
     end
 
@@ -178,6 +182,7 @@ module SolrCloud
       # return connection.get(url, **kwargs)
       kwargkeys = kwargs.keys - OkToCache
       if kwargkeys.any? or url =~ /\?/
+        logger.warn "Skipping #{url} with #{kwarkeys.join(",")}"
         connection.get(url, **kwargs)
       else
         @http_cache.get(url, **kwargs)
