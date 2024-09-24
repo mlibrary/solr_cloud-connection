@@ -15,6 +15,45 @@ require_relative "errors"
 
 require "forwardable"
 
+class DumbCache
+  def initialize(raw_connection)
+    @cache = {}
+    @raw_connection = raw_connection
+  end
+
+  def []=(url, resp)
+    @cache[url] = Marshal.dump(resp)
+  end
+
+  def [](key)
+    Marshal.load @cache[key]
+  end
+
+  def delete(key)
+    @cache.delete(key)
+  end
+  
+  def clear
+    @cache.replace({})
+  end
+  LOGGER = Logger.new("output.txt")
+
+  def get(url, **kwargs)
+    if kwargs.any?
+      url = url + "?" + kwargs.join("=")
+    end
+    if @cache.has_key? url
+      LOGGER.warn "Cache hit: #{url}"
+      @cache[url]
+    else
+      LOGGER.warn "Cache miss: #{url}"
+      resp = @raw_connection.get(url, **kwargs)
+      @cache[url] = resp
+      resp
+    end
+  end
+end
+
 module SolrCloud
   # The connection object is the basis of all the other stuff. Everything will be created, directly
   # or indirectly, through the connection.
@@ -43,14 +82,14 @@ module SolrCloud
 
     # @return [Faraday::Connection] the underlying Faraday connection
     attr_reader :connection
-
+    attr_reader :http_cache
 
     # let the underlying connection handle HTTP verbs
 
-    # @!method get
-    # Forwarded on to the underlying Faraday connection
-    # @see Faraday::Connection.get
-    def_delegator :@connection, :get
+    # # @!method get
+    # # Forwarded on to the underlying Faraday connection
+    # # @see Faraday::Connection.get
+    # def_delegator :@connection, :get
 
     # @!method post
     # Forwarded on to the underlying Faraday connection
@@ -88,7 +127,8 @@ module SolrCloud
                   logger
                 end
       @connection = create_raw_connection(url: url, adapter: adapter, user: user, password: password, logger: @logger)
-      bail_if_incompatible!
+      # bail_if_incompatible!
+      @http_cache = DumbCache.new(@connection)
       @logger.info("Connected to supported solr at #{url}")
     end
 
@@ -98,6 +138,7 @@ module SolrCloud
       c = allocate
       c.instance_variable_set(:@connection, faraday_connection)
       c.instance_variable_set(:@url, faraday_connection.build_url.to_s)
+      c.instance_variable_set(:@http_cache, DumbCache.new(faraday_connection))
       c
     end
 
@@ -129,6 +170,21 @@ module SolrCloud
     rescue Faraday::ConnectionFailed
       raise ConnectionFailed.new("Can't connect to #{url}")
     end
+
+    # Override the underlying connection's #get with a caching system.
+    OkToCache = %w(action)
+
+    def get(url, **kwargs)
+      # return connection.get(url, **kwargs)
+      kwargkeys = kwargs.keys - OkToCache
+      if kwargkeys.any? or url =~ /\?/
+        connection.get(url, **kwargs)
+      else
+        @http_cache.get(url, **kwargs)
+      end
+    end
+
+    # We'll ignore anything with arguments or with a '?' in the full URL'
 
     # Get basic system info from the server
     # @raise [Unauthorized] if the server gives a 401

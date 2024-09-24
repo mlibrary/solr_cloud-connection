@@ -68,7 +68,7 @@ module SolrCloud
     def delete!
       return connection unless exist?
       raise CollectionAliasedError.new("Cannot delete collection #{name}; it has alias(s) #{alias_names.join(", ")}") if aliased?
-      connection.get("solr/admin/collections", {action: "DELETE", name: name})
+      connection.get("solr/admin/collections", action: "DELETE", name: name)
       connection
     end
 

@@ -72,4 +72,5 @@ RSpec.describe SolrCloud::Connection do
       expect(@server.legal_solr_name?("-abc")).to be_falsey
     end
   end
+  
 end

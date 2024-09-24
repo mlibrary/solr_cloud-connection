@@ -82,6 +82,7 @@ RSpec.describe SolrCloud::Collection do
     end
 
     it "can check for aliveness" do
+      x = @collection.alive?
       expect(@collection.alive?)
     end
 
