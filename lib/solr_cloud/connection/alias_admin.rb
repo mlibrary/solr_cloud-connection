@@ -30,6 +30,7 @@ module SolrCloud
           raise WontOverwriteError.new("Alias '#{name}' already points to collection '#{get_alias(name).collection.name}'; won't overwrite without force: true")
         end
         get("solr/admin/collections", action: "CREATEALIAS", name: name, collections: collection_name)
+        clear_memery_cache!
         get_alias(name)
       end
 
@@ -38,6 +39,7 @@ module SolrCloud
         a = get_alias(name)
         return self unless a.exist?
         get("solr/admin/collections", action: "DELETEALIAS", name: name)
+        clear_memery_cache!
         self
       end
 
@@ -89,7 +91,7 @@ module SolrCloud
 
       # The "raw" alias map, which just maps alias names to collection names
       # @return [Hash<String, String>]
-      def raw_alias_map
+      memoize def raw_alias_map
         get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
       end
     end
