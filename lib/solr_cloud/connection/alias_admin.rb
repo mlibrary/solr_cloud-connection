@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
+require "memery"
+
 module SolrCloud
   class Connection
     # methods having to do with aliases, to be included by the connection object.
     # These are split out only to make it easier to deal with them.
     module AliasAdmin
+      include Memery
+
       # A simple data-class to pair an alias with its collection
       AliasCollectionPair = Struct.new(:alias, :collection)
 

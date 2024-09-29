@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "memery"
+
 module SolrCloud
   class Connection
     # methods having to do with collections, to be included by the connection object.
@@ -10,6 +12,7 @@ module SolrCloud
     # The idea is that you shouldn't need to know if something is an alias or a collection
     # until it's relevant
     module CollectionAdmin
+      include Memery
       # Create and return a new collection.
       # @param name [String] Name for the new collection
       # @param configset [String, Configset] (name of) the configset to use for this collection

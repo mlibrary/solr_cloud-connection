@@ -17,7 +17,6 @@ RUN mkdir -p /gems && chown ${UID}:${GID} /gems
 
 ENV PATH="$PATH:/app/exe:/app/bin"
 USER $UNAME
-
 ENV BUNDLE_PATH /gems
 
 WORKDIR /app
@@ -27,4 +26,7 @@ FROM development AS production
 COPY --chown=${UID}:${GID} . /app
 
 RUN bundle install
+
+RUN echo "All done"
+
 

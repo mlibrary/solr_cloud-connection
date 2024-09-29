@@ -2,11 +2,14 @@
 
 require "solr_cloud/connection"
 require "forwardable"
+require "memery"
+
 
 module SolrCloud
   # A Collection provides basic services on the collection -- checking its health,
   # creating or reporting aliases, and deleting itself.
   class Collection
+    include Memery
     extend Forwardable
 
     # Forward the HTTP verbs to the  underlying connection

@@ -29,10 +29,12 @@ Gem::Specification.new do |spec|
   spec.bindir = "bin"
   spec.executables = spec.files.grep(%r{\Abin/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+  
 
   spec.add_dependency "faraday", "~>2.0"
   spec.add_dependency "httpx", "~>1.0"
   spec.add_dependency "rubyzip", "~>2.0"
+  spec.add_dependency "memery"
 
   # spec.add_development_dependency "pry"
 

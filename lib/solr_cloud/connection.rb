@@ -12,6 +12,8 @@ require_relative "collection"
 require_relative "alias"
 require_relative "configset"
 require_relative "errors"
+require "memery"
+
 
 require "forwardable"
 
