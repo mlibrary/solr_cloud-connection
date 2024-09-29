@@ -29,7 +29,7 @@ module SolrCloud
         if has_alias?(name) && !force
           raise WontOverwriteError.new("Alias '#{name}' already points to collection '#{get_alias(name).collection.name}'; won't overwrite without force: true")
         end
-        connection.get("solr/admin/collections", action: "CREATEALIAS", name: name, collections: collection_name)
+        get("solr/admin/collections", action: "CREATEALIAS", name: name, collections: collection_name)
         get_alias(name)
       end
 
@@ -81,7 +81,7 @@ module SolrCloud
       # The "raw" alias map, which just maps alias names to collection names
       # @return [Hash<String, String>]
       def raw_alias_map
-        connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
+        get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
       end
     end
   end

@@ -26,6 +26,7 @@ module SolrCloud
   class Connection
     extend Forwardable
 
+    include Memery
     include ConfigsetAdmin
     include CollectionAdmin
     include AliasAdmin
@@ -44,7 +45,7 @@ module SolrCloud
     attr_reader :logger
 
     # @return [Faraday::Connection] the underlying Faraday connection
-    attr_reader :connection
+    attr_reader :raw_connection
 
 
     # let the underlying connection handle HTTP verbs
@@ -52,22 +53,22 @@ module SolrCloud
     # @!method get
     # Forwarded on to the underlying Faraday connection
     # @see Faraday::Connection.get
-    def_delegator :@connection, :get
+    def_delegator :@raw_connection, :get
 
     # @!method post
     # Forwarded on to the underlying Faraday connection
     # @see Faraday::Connection.post
-    def_delegator :@connection, :post
+    def_delegator :@raw_connection, :post
 
     # @!method delete
     # Forwarded on to the underlying Faraday connection
     # @see Faraday::Connection.delete
-    def_delegator :@connection, :delete
+    def_delegator :@raw_connection, :delete
 
     # @!method put
     # Forwarded on to the underlying Faraday connection
     # @see Faraday::Connection.put
-    def_delegator :@connection, :put
+    def_delegator :@raw_connection, :put
 
     # Create a new connection to talk to solr
     # @param url [String] URL to the "root" of the solr installation. For a default solr setup, this will
@@ -89,7 +90,7 @@ module SolrCloud
                 else
                   logger
                 end
-      @connection = create_raw_connection(url: url, adapter: adapter, user: user, password: password, logger: @logger)
+      @raw_connection = create_raw_connection(url: url, adapter: adapter, user: user, password: password, logger: @logger)
       bail_if_incompatible!
       @logger.info("Connected to supported solr at #{url}")
     end
@@ -98,7 +99,7 @@ module SolrCloud
     # @param faraday_connection [Faraday::Connection] A pre-build faraday connection object
     def self.new_from_faraday(faraday_connection)
       c = allocate
-      c.instance_variable_set(:@connection, faraday_connection)
+      c.instance_variable_set(:@raw_connection, faraday_connection)
       c.instance_variable_set(:@url, faraday_connection.build_url.to_s)
       c
     end
@@ -189,6 +190,12 @@ module SolrCloud
 
     def inspect
       "<#{self.class} #{@url}>"
+    end
+
+    # Kill the cache when the collection information
+    # needs to be updated (e.g., when creating a new collection)
+    def dirty!
+      clear_memery_cache!
     end
 
     alias_method :to_s, :inspect

@@ -43,7 +43,7 @@ module SolrCloud
           :replicationFactor => replication_factor,
           "collection.configName" => configset_name
         }
-        connection.get("solr/admin/collections", args)
+        get("solr/admin/collections", args)
         get_collection(name)
       end
 
