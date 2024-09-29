@@ -44,6 +44,7 @@ module SolrCloud
           "collection.configName" => configset_name
         }
         get("solr/admin/collections", args)
+        clear_memery_cache!
         get_collection(name)
       end
 
@@ -98,8 +99,26 @@ module SolrCloud
         get_collection(collection_name)
       end
 
-      def get_collection_info(name)
+      memoize def get_collection_info(name)
         get("api/collections/#{name}").body["cluster"]["collections"][name]
+      end
+
+      def delete_collection!(name_or_coll)
+        name = case name_or_coll
+               when Collection
+                 name_or_coll.name
+               when String
+                 name_or_coll
+               else
+                 raise ArgumentError, "Need a collection name or actual collection"
+               end
+        return self unless has_collection?(name)
+        if has_alias?(name)
+          raise CollectionAliasedError.new("Cannot delete collection #{name}; it has alias(s) #{alias_names.join(", ")}")
+        end
+        get("solr/admin/collections", {action: "DELETE", name: name})
+        clear_memery_cache!
+        self
       end
 
     end

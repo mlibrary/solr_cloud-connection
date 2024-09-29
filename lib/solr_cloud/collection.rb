@@ -69,10 +69,7 @@ module SolrCloud
     # deleted via a different method, such as through the API)
     # @return [Connection] The connection object used to create this collection object
     def delete!
-      return connection unless exist?
-      raise CollectionAliasedError.new("Cannot delete collection #{name}; it has alias(s) #{alias_names.join(", ")}") if aliased?
-      connection.get("solr/admin/collections", {action: "DELETE", name: name})
-      connection
+      connection.delete_collection!(name)
     end
 
     # Does this collection still exist?

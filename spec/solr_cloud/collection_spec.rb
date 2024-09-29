@@ -7,7 +7,6 @@ RSpec.describe SolrCloud::Collection do
 
   describe "via connection object" do
     before(:all) do
-      cleanout!
       @server.create_configset(name: @configname, confdir: test_conf_dir, force: true)
     end
 
@@ -68,7 +67,6 @@ RSpec.describe SolrCloud::Collection do
 
   describe "collection object" do
     before(:all) do
-      cleanout!
       @configname = rnd_configname
       @server = connection
       @server.create_configset(name: @configname, confdir: test_conf_dir, force: true)
@@ -77,7 +75,7 @@ RSpec.describe SolrCloud::Collection do
     end
 
     after(:all) do
-      @collection.delete!
+      @collection.delete! if @collection
       @server.delete_configset(@configname)
     end
 
@@ -126,7 +124,6 @@ RSpec.describe SolrCloud::Collection do
       coll = @server.create_collection(name: rnd_collname, configset: @configname)
       coll.delete!
       expect(@server.collection_names).not_to include(coll.name)
-      coll.delete!
     end
   end
 

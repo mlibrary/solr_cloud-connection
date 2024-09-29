@@ -72,6 +72,8 @@ module SolrCloud
       def delete_configset(name)
         if has_configset? name
           delete("api/cluster/configs/#{name}")
+          clear_memery_cache!
+          self
         end
         self
       rescue Faraday::BadRequestError => e
