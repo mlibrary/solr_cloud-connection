@@ -197,7 +197,7 @@ module SolrCloud
     # Get a count of how many documents are in the index
     # @return [Fixnum] the number of documents
     def count
-      get("solr/#{name}/select", q: "*:*").body["response"]["numFound"]
+      connection.get("solr/#{name}/select", q: "*:*").body["response"]["numFound"]
     end
 
     def inspect

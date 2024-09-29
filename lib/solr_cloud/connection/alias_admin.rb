@@ -33,6 +33,15 @@ module SolrCloud
         get_alias(name)
       end
 
+      # Delete an alias
+      def delete_alias!(name)
+        a = get_alias(name)
+        return self unless a.exist?
+        get("solr/admin/collections", action: "DELETEALIAS", name: name)
+        self
+      end
+
+
       # Is there an alias with this name?
       # @return [Boolean]
       def has_alias?(name)
@@ -71,7 +80,7 @@ module SolrCloud
       # Get the aliases and create a map of the form AliasName -> AliasObject
       # @return [Hash<String,Alias>] A hash mapping alias names to alias objects
       def alias_map
-        raw_alias_map.keys.each_with_object({}) do |alias_name, h|
+        connection.raw_alias_map.keys.each_with_object({}) do |alias_name, h|
           a = Alias.new(name: alias_name, connection: self)
           c = Collection.new(name: raw_alias_map[alias_name], connection: self)
           h[alias_name] = AliasCollectionPair.new(a, c)

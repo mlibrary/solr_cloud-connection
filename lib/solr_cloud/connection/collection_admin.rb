@@ -97,6 +97,11 @@ module SolrCloud
         raise NoSuchCollectionError.new("Collection '#{collection_name}' not found") unless has_collection?(collection_name)
         get_collection(collection_name)
       end
+
+      def get_collection_info(name)
+        get("api/collections/#{name}").body["cluster"]["collections"][name]
+      end
+
     end
   end
 end

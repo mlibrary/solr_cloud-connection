@@ -17,9 +17,7 @@ module SolrCloud
     # Delete this alias. Will be a no-op if it doesn't exist.
     # @return [Connection] the connection
     def delete!
-      return connection unless exist?
-      connection.get("solr/admin/collections", action: "DELETEALIAS", name: name)
-      connection
+      connection.delete_alias!(name)
     end
 
     # Does this alias still exist?
