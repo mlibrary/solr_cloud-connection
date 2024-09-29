@@ -136,7 +136,7 @@ module SolrCloud
     # Get basic system info from the server
     # @raise [Unauthorized] if the server gives a 401
     # @return [Hash] The response from the info call
-    def system
+    memoize def system
       resp = get("/solr/admin/info/system")
       resp.body
     rescue Faraday::UnauthorizedError
