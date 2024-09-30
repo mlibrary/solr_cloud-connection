@@ -3,15 +3,16 @@ RSpec.describe SolrCloud::Alias do
     cleanout!
     @server = connection
     @config_name = @server.create_configset(name: rnd_configname, confdir: test_conf_dir, force: true)
+    @c = @server.create_collection(name: rnd_collname, configset: @config_name)
   end
 
   after(:all) do
+    @c.delete!
     connection.delete_configset(@config_name)
   end
 
   it "has the right connection" do
-    c = @server.create_collection(name: rnd_collname, configset: @config_name)
-    a = @server.create_alias(name: rnd_aliasname, collection_name: c.name)
+    a = @server.create_alias(name: rnd_aliasname, collection_name: @c.name)
     expect(a.connection.inspect).to eq(@server.inspect)
     a.delete!
   end
