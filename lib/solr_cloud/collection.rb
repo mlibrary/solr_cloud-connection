@@ -99,7 +99,7 @@ module SolrCloud
     # Access to the root info from the api. Mostly for internal use, but not labeled as such
     # 'cause users will almost certainly find a use for it.
     def info
-      connection.get("api/collections/#{name}").body["cluster"]["collections"][name]
+      connection.get_collection_info(name)
     end
 
     # Reported as healthy?
@@ -146,15 +146,15 @@ module SolrCloud
     # @param alias_name [String] name of the alias to create
     # @param force [Boolean] whether or not to overwrite an existing alias
     # @return [SolrCloud::Alias]
-    def alias_as(alias_name, force: true)
+    def alias_as!(alias_name, force: true)
       connection.create_alias(name: alias_name, collection_name: name, force: true)
     end
 
-    def alias_as!(alias_name)
+    def alias_as(alias_name)
       if connection.has_alias?(alias_name)
         raise AliasAlreadyDefinedError.new("Alias #{alias_name} already points to #{connection.get_alias(alias_name).collection.name}")
       end
-      alias_as(alias_name, force: false)
+      alias_as!(alias_name, force: false)
     end
 
     # Send a commit (soft if unspecified)

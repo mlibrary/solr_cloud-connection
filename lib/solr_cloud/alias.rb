@@ -14,6 +14,7 @@ module SolrCloud
       true
     end
 
+    # @overload delete!
     # Delete this alias. Will be a no-op if it doesn't exist.
     # @return [Connection] the connection
     def delete!
@@ -38,19 +39,18 @@ module SolrCloud
     # @param coll [String, Collection] either the name of the collection, or a collection object itself
     # @return [Collection] the now-current collection
     def switch_collection_to(coll)
-      collect_name = case coll
+      collect = case coll
       when String
-        coll
+        connection.get_collection(coll)
       when Collection
-        coll.name
+        coll
       else
         raise "Alias#switch_collection_to only takes a name(string) or a collection, not '#{coll}'"
       end
-      raise NoSuchCollectionError unless connection.has_collection?(collect_name)
-      connection.create_alias(name: name, collection_name: collect_name, force: true)
+      raise NoSuchCollectionError unless connection.has_collection?(collect.name)
+      # delete!
+      coll.alias_as!(name)
     end
-
-    alias_method :collection=, :switch_collection_to
 
     # Get basic information on the underlying collection, so inherited methods that
     # use it (e.g., #healthy?) will work.

@@ -50,7 +50,7 @@ module SolrCloud
 
       # Get a list of _only_ collections, as opposed to the mix of collections and aliases we
       # usually do.
-      def only_collections
+      memoize def only_collections
         connection.get("api/collections").body["collections"].map { |c| Collection.new(name: c, connection: self) }
       end
 
