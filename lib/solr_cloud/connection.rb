@@ -26,10 +26,10 @@ module SolrCloud
   class Connection
     extend Forwardable
 
-    include Memery
     include ConfigsetAdmin
     include CollectionAdmin
     include AliasAdmin
+    include Memery
 
     # @return [String] String representation of the URL to solr
     attr_reader :url

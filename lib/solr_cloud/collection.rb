@@ -47,7 +47,7 @@ module SolrCloud
     # @param [SolrCloud::Connection] connection Connection to the solr "root" (http://blah:8888/)
     def initialize(name:, connection:)
       # raise NoSuchCollectionError.new("No collection #{name}") unless connection.has_collection?(name)
-      @connection = connection.dup
+      @connection = connection
       @name = name
       @sp = "/solr/#{name}"
     end
@@ -69,13 +69,13 @@ module SolrCloud
     # deleted via a different method, such as through the API)
     # @return [Connection] The connection object used to create this collection object
     def delete!
-      connection.delete_collection!(name)
+      connection.delete_collection!(self)
     end
 
     # Does this collection still exist?
     # @return [Boolean]
     def exist?
-      connection.only_collection_names.include?(name)
+      connection.only_collection_names.include?(@name)
     end
 
     # Check to see if the collection is alive
@@ -99,7 +99,7 @@ module SolrCloud
     # Access to the root info from the api. Mostly for internal use, but not labeled as such
     # 'cause users will almost certainly find a use for it.
     def info
-      connection.get_collection_info(name)
+      connection.get_collection_info(self.name)
     end
 
     # Reported as healthy?

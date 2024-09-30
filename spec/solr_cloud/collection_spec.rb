@@ -1,42 +1,36 @@
 RSpec.describe SolrCloud::Collection do
   before(:all) do
     verify_test_environment!
+    cleanout!
     @configname = rnd_configname
     @server = connection
+    @config = @server.create_configset(name: @configname, confdir: test_conf_dir, force: true)
   end
 
+  after(:all) do
+    @config.delete!
+  end
+
+
   describe "via connection object" do
-    before(:all) do
-      @server.create_configset(name: @configname, confdir: test_conf_dir, force: true)
-    end
 
-    after(:all) do
-      @server.delete_configset(@configname)
-    end
-
-    before(:each) do
-      @collection_name = rnd_collname
-    end
-
-    after(:each) do
-      @server.get_collection(@collection_name).delete! if @server.has_collection?(@collection_name)
-    end
-
-    it "can create/delete a collection" do
-      coll = @server.create_collection(name: @collection_name, configset: @configname)
-      expect(@server.has_collection?(@collection_name))
+    it "creates and deletes a collection" do
+      coll = @server.create_collection(name: rnd_collname, configset: @configname)
+      expect(@server.has_collection?(coll.name))
       coll.delete!
-      expect(@server.has_collection?(@collection_name)).to be_falsey
+      expect(@server.has_collection?(coll.name)).to be_falsey
     end
 
     it "doesn't identify as an alias" do
-      coll = @server.create_collection(name: @collection_name, configset: @configname)
+      coll = @server.create_collection(name: rnd_collname, configset: @configname)
       expect(coll.alias?).to be_falsey
+      coll.delete!
+      expect(@server.collections.count).to eq 0
     end
 
     it "throws an error if you try to create a collection with a bad configset" do
       expect {
-        @server.create_collection(name: @collection_name, configset: "INVALID")
+        @server.create_collection(name: rnd_collname, configset: "INVALID")
       }.to raise_error(SolrCloud::NoSuchConfigSetError)
     end
 
@@ -49,13 +43,15 @@ RSpec.describe SolrCloud::Collection do
     end
 
     it "can get its configset" do
-      coll = @server.create_collection(name: @collection_name, configset: @configname)
+      coll = @server.create_collection(name: rnd_collname, configset: @configname)
       expect(coll.configset.name).to eq(@configname)
+      coll.delete!
     end
 
     it "won't allow you to drop a configset in use" do
-      @server.create_collection(name: @collection_name, configset: @configname)
+      coll = @server.create_collection(name: rnd_collname, configset: @configname)
       expect { @server.delete_configset @configname }.to raise_error(SolrCloud::ConfigSetInUseError)
+      coll.delete!
     end
 
     it "throws an error if you try to create it with an illegal name" do
@@ -67,16 +63,23 @@ RSpec.describe SolrCloud::Collection do
 
   describe "collection object" do
     before(:all) do
+      cleanout!
       @configname = rnd_configname
       @server = connection
       @server.create_configset(name: @configname, confdir: test_conf_dir, force: true)
       @collection_name = rnd_collname
-      @collection = @server.create_collection(name: @collection_name, configset: @configname)
     end
 
     after(:all) do
-      @collection.delete! if @collection
       @server.delete_configset(@configname)
+    end
+
+    before(:each) do
+      @collection = @server.create_collection(name: rnd_collname, configset: @configname)
+    end
+
+    after(:each) do
+      @collection.delete!
     end
 
     it "can check for aliveness" do
