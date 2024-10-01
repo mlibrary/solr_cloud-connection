@@ -48,7 +48,7 @@ RSpec.describe SolrCloud::Configset do
     end
 
     after(:each) do
-      @cset.delete!
+      @cset.delete! if @server.configset_names.include?(@cset.name)
     end
 
     it "can delete itself" do

@@ -44,7 +44,6 @@ module SolrCloud
         self
       end
 
-
       # Is there an alias with this name?
       # @return [Boolean]
       def has_alias?(name)
@@ -92,7 +91,7 @@ module SolrCloud
 
       # The "raw" alias map, which just maps alias names to collection names
       # @return [Hash<String, String>]
-     def raw_alias_map
+      memoize def raw_alias_map
         get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
       end
     end

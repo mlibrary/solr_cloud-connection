@@ -34,6 +34,7 @@ module SolrCloud
         end
         # TODO: Error check in here somewhere
         FileUtils.rm(zfile, force: true)
+        clear_memery_cache!
         get_configset(name)
       end
 
@@ -44,7 +45,7 @@ module SolrCloud
       end
 
       # @return [Array<String>] the names of the config sets
-      def configset_names
+      memoize def configset_names
         get("api/cluster/configs").body["configSets"]
       end
 
