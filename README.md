@@ -45,10 +45,11 @@ a collections that's pointed to by an alias.
 
 * At this point the API is unstable
 *  Solr has no sense of an atomic action and plenty of other ways
-  (e.g, the admin interface) to mess with things, so nothing is cached. 
-  This means that individual actions can involve several round-trips to solr. If you're doing so much admin
-  that this becomes a bottleneck, you're well outside this gem's target case.
-* While solr aliases can point to more than one collection at a time, this gem enforces one collection
+  (e.g, the admin interface) to mess with things, so anything that doesn't
+  change the data (so, basically, anything other than create or delete)
+  is cached. Exceptions are obvious, e.g., `ping`
+* While solr aliases can point to more than one collection at a time, 
+  this gem enforces one collection
   per alias (although many aliases can point to the same collection)
 
 ## Usage
