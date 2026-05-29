@@ -77,7 +77,7 @@ module SolrCloud
       # The "raw" alias map, which just maps alias names to collection names
       # @return [Hash<String, String>]
       def raw_alias_map
-        connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
+        connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"] || {}
       end
     end
   end
