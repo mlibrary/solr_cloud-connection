@@ -26,8 +26,9 @@ module SolrCloud
         zfile = "#{Dir.tmpdir}/solr_add_configset_#{name}_#{Time.now.hash}.zip"
         z = ZipFileGenerator.new(confdir, zfile)
         z.write
-        @connection.put("api/cluster/configs/#{config_set_name}") do |req|
+        @connection.post("solr/admin/configs?action=UPLOAD&name=#{config_set_name}") do |req|
           req.body = File.binread(zfile)
+          req.headers["Content-Type"] = "application/octet-stream"
         end
         # TODO: Error check in here somewhere
         FileUtils.rm(zfile, force: true)
@@ -42,7 +43,7 @@ module SolrCloud
 
       # @return [Array<String>] the names of the config sets
       def configset_names
-        connection.get("api/cluster/configs").body["configSets"]
+        connection.get("solr/admin/configs", action: "LIST").body["configSets"]
       end
 
       # Check to see if a configset is defined
@@ -68,7 +69,7 @@ module SolrCloud
       # @return [Connection] self
       def delete_configset(name)
         if has_configset? name
-          connection.delete("api/cluster/configs/#{name}")
+          connection.get("solr/admin/configs", action: "DELETE", name: name)
         end
         self
       rescue Faraday::BadRequestError => e
