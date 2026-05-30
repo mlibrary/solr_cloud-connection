@@ -74,10 +74,16 @@ module SolrCloud
         end
       end
 
-      # The "raw" alias map, which just maps alias names to collection names
-      # @return [Hash<String, String>]
+      # The "raw" alias map, which just maps alias names to collection names.
+      #
+      # The Solr +LISTALIASES+ action omits the +"aliases"+ key entirely (returning +null+
+      # or an absent key) when no aliases are defined. This is true on Solr 10 and can
+      # occur on earlier versions as well. The +|| {}+ guard ensures callers always receive
+      # a Hash rather than +nil+.
+      #
+      # @return [Hash<String, String>] map of alias name -> collection name, empty if none exist
       def raw_alias_map
-        connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"]
+        connection.get("solr/admin/collections", action: "LISTALIASES").body["aliases"] || {}
       end
     end
   end
