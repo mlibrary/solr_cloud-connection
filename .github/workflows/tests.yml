@@ -41,15 +41,7 @@ jobs:
         run: docker compose ps
 
       - name: wait for solr
-        run: |
-          URL="http://solr:SolrRocks@127.0.0.1:${{ steps.vars.outputs.SOLR_PORT }}/solr"
-          STATUS=$(curl -I "$URL" 2>/dev/null | head -n 1 | cut -d' ' -f2)
-          echo "$STATUS"
-          while [[ "$STATUS" -ne 302 ]]; do
-            sleep 1
-            STATUS=$(curl -I "$URL" 2>/dev/null | head -n 1 | cut -d' ' -f2)
-            echo "$STATUS"
-          done
+        run: docker compose wait ${{ steps.vars.outputs.SOLR_SERVICE }}
 
       - name: Set up Ruby 3.2
         uses: ruby/setup-ruby@v1
