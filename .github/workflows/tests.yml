@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Create .env file
+        run: cat env.* > .env
+
       - name: Set version vars
         id: vars
         run: |
