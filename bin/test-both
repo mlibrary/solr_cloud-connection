@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Run the full test suite against both Solr 8 (solr:8.11.2) and Solr 10 (solr:10).
+#
+# Usage (from project root, inside the app container or with Ruby/bundler available):
+#
+#   bin/test-both             # run against both solr and solr10 services
+#   bin/test-both solr8       # run only against Solr 8
+#   bin/test-both solr10      # run only against Solr 10
+#
+# Environment variables from env.test (Solr 8) and env.test.solr10 (Solr 10) are
+# loaded automatically. Both services must be running before this script is called
+# (see compose.yml for service names and ports).
+
+set -e
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+echo "Installing gems..."
+bundle install --quiet
+
+# Do not exit on rspec failure -- we want to run both suites and report all results.
+set +e
+
+run_suite() {
+  local label="$1"
+  local env_file="$2"
+
+  echo ""
+  echo "========================================"
+  echo "  Running tests against: ${label}"
+  echo "========================================"
+  echo ""
+
+  # Source the env file so vars are available to the rspec process
+  set -a
+  # shellcheck source=/dev/null
+  source "${ROOT}/${env_file}"
+  set +a
+
+  bundle exec rspec
+  local exit_code=$?
+
+  if [ $exit_code -eq 0 ]; then
+    echo ""
+    echo "[PASS] ${label}"
+  else
+    echo ""
+    echo "[FAIL] ${label} (exit code: ${exit_code})"
+  fi
+
+  return $exit_code
+}
+
+MODE="${1:-both}"
+OVERALL_EXIT=0
+
+case "$MODE" in
+  solr8)
+    run_suite "Solr 8 (solr:8.11.2)" "env.test" || OVERALL_EXIT=$?
+    ;;
+  solr10)
+    run_suite "Solr 10 (solr:10)" "env.test.solr10" || OVERALL_EXIT=$?
+    ;;
+  both)
+    run_suite "Solr 8 (solr:8.11.2)" "env.test" || OVERALL_EXIT=$?
+    run_suite "Solr 10 (solr:10)" "env.test.solr10" || OVERALL_EXIT=$?
+    ;;
+  *)
+    echo "Usage: bin/test-both [solr8|solr10|both]"
+    exit 1
+    ;;
+esac
+
+if [ $OVERALL_EXIT -eq 0 ]; then
+  echo ""
+  echo "All suites passed."
+else
+  echo ""
+  echo "One or more suites FAILED."
+fi
+
+exit $OVERALL_EXIT

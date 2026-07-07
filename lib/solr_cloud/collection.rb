@@ -98,8 +98,15 @@ module SolrCloud
 
     # Access to the root info from the api. Mostly for internal use, but not labeled as such
     # 'cause users will almost certainly find a use for it.
+    #
+    # Uses the V1 +CLUSTERSTATUS+ action rather than the V2 +api/collections/{name}+
+    # endpoint because the V2 response envelope changed between Solr 8 and Solr 9/10
+    # (the +cluster+ wrapper key is absent in Solr 10). The V1 CLUSTERSTATUS response
+    # consistently returns +cluster.collections.{name}+ on all supported versions.
+    #
+    # @return [Hash] the collection status hash as returned by Solr
     def info
-      connection.get("api/collections/#{name}").body["cluster"]["collections"][name]
+      connection.get("solr/admin/collections", action: "CLUSTERSTATUS", collection: name).body["cluster"]["collections"][name]
     end
 
     # Reported as healthy?

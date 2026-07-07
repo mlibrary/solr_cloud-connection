@@ -176,6 +176,17 @@ module SolrCloud
       _version_part_int(2)
     end
 
+    # Returns true if the connected Solr instance is version 9 or later (9, 10, 11, ...).
+    #
+    # Several Solr APIs changed paths between Solr 8 and Solr 9. This predicate is used
+    # internally to dispatch to the correct API endpoint when behavior differs across major
+    # versions. External callers may also use it to gate version-specific logic.
+    #
+    # @return [Boolean] true if the server reports major version >= 9
+    def solr9_or_later?
+      major_version >= 9
+    end
+
     # Check to see if the given string follows solr's rules for thing
     # Solr only allows ASCII letters and numbers, underscore, and dash,
     # and it can't start with an underscore.

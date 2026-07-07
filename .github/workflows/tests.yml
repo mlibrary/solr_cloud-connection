@@ -3,46 +3,64 @@ name: Run Tests
 on: push
 
 jobs:
-  # Run tests
   test:
+    strategy:
+      matrix:
+        solr_version: [8, 10]
+    name: test-solr-${{ matrix.solr_version }}
     runs-on: ubuntu-latest
 
-    # Override the solr url in the environment because docker is running in the
-    # context of the host machine, not the docker image, and thus doesn't know
-    # the machine name "solr"
     env:
-      SOLR_URL: http://localhost:8983/
+      SOLR_USER: solr
+      SOLR_PASSWORD: SolrRocks
 
     steps:
       - uses: actions/checkout@v3
+
       - name: Create .env file
-        run:  cat env.* > .env
-      - name: Load .env file
-        uses: xom9ikk/dotenv@v2
-        with:
-          mode: github
-      - name: build images
-        run: docker compose build
-      - name: start containers
-        run: docker compose up -d
-      - name: run docker compose ps
+        run: cat env.* > .env
+
+      - name: Set version vars
+        id: vars
+        run: |
+          if [ "${{ matrix.solr_version }}" = "8" ]; then
+            echo "SOLR_PORT=6781" >> $GITHUB_OUTPUT
+            echo "SOLR_SERVICE=solr" >> $GITHUB_OUTPUT
+          else
+            echo "SOLR_PORT=6783" >> $GITHUB_OUTPUT
+            echo "SOLR_SERVICE=solr10" >> $GITHUB_OUTPUT
+          fi
+
+      - name: build image
+        run: docker compose build ${{ steps.vars.outputs.SOLR_SERVICE }}
+
+      - name: start container
+        run: docker compose up -d ${{ steps.vars.outputs.SOLR_SERVICE }}
+
+      - name: docker compose ps
         run: docker compose ps
+
       - name: wait for solr
         run: |
-          STATUS=$(curl -I  http://solr:SolrRocks@127.0.0.1:9090/solr 2>/dev/null | head -n 1 | cut -d$' ' -f2)
-          echo $STATUS
-          while [[ $STATUS -ne 302 ]]
-          do
-            sleep 1  
-            STATUS=$(curl -I  http://solr:SolrRocks@127.0.0.1:9090/solr 2>/dev/null | head -n 1 | cut -d$' ' -f2)
-            echo $STATUS
+          URL="http://127.0.0.1:${{ steps.vars.outputs.SOLR_PORT }}/solr/admin/info/system"
+          for i in $(seq 1 60); do
+            if curl -sf -u solr:SolrRocks "$URL" > /dev/null 2>&1; then
+              echo "Solr ready after ${i}s"
+              exit 0
+            fi
+            sleep 5
           done
+          echo "Solr did not become ready within 300s"
+          exit 1
+
       - name: Set up Ruby 3.2
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
           bundler-cache: true
+
       - name: run tests
         run: bundle exec rspec
-        env: 
+        env:
+          SOLR_URL: http://localhost:${{ steps.vars.outputs.SOLR_PORT }}/
           GHA_TEST: "true"
