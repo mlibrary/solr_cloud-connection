@@ -41,7 +41,17 @@ jobs:
         run: docker compose ps
 
       - name: wait for solr
-        run: docker compose wait ${{ steps.vars.outputs.SOLR_SERVICE }}
+        run: |
+          URL="http://127.0.0.1:${{ steps.vars.outputs.SOLR_PORT }}/solr/admin/info/system"
+          for i in $(seq 1 60); do
+            if curl -sf -u solr:SolrRocks "$URL" > /dev/null 2>&1; then
+              echo "Solr ready after ${i}s"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Solr did not become ready within 300s"
+          exit 1
 
       - name: Set up Ruby 3.2
         uses: ruby/setup-ruby@v1
