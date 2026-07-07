@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Do basic administrative operations on a solr cloud instance and collections within"
   spec.homepage = "https://github.com/mlibrary/solr_cloud-connection"
-  spec.required_ruby_version = ">= 2.6.0"
+  spec.required_ruby_version = ">= 3.3"
 
   # spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
 
