@@ -38,5 +38,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "simplecov", ">=0.22.0"
   spec.add_development_dependency "yard", ">=0.9.0" 
 
-  spec.add_development_dependency "dotenv", ">=3.0"
+  spec.add_development_dependency "dotenv", ">=2.0"
 end
