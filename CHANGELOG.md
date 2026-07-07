@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.1[ - 2026-07-07
+
+Minor update to gems to allow (and test) use of Ruby 2.7 - 4.x
+
 ## [1.0.0] - 2026-07-07
 
 ### Major — Solr 8/9/10 Dual-Version Compatibility
