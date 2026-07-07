@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "pathname"
 $LOAD_PATH.unshift Pathname.new(__dir__) + "lib"
 require_relative "lib/solr_cloud/connection"
 config_directory = "/Users/dueberb/devel/mlibrary/solr_cloud-connection/spec/data/simple_configuration/conf"
@@ -38,13 +37,13 @@ server.configset_names
 
 # That's a dumb name for a config set. Delete it and try again.
 cset.delete!
-cset = server.create_configset(name: "cars_cfg", confdir: config_directory)
+server.create_configset(name: "cars_cfg", confdir: config_directory)
 server.configsets
 
 # Can't be overwritten by accident
 begin
   server.create_configset(name: "cars_cfg", confdir: config_directory)
-rescue => e
+rescue
 end
 
 # But you can force it
@@ -85,7 +84,7 @@ end
 ##### Aliases
 
 # We'll want to alias it so we can just use 'cars'
-cars = cars_v1.alias_as("cars")
+cars_v1.alias_as("cars")
 cars_v1.alias?
 cars_v1.aliased?
 
@@ -134,16 +133,16 @@ cars.collection
 
 # You can grab existing collections/aliases/configsets from the server
 # as well as when they're returned by a create_* statement
-cv1 = server.get_collection("cars_v1")
+server.get_collection("cars_v1")
 cars = server.get_collection("cars")
 
 # get_*! methods raise an error
 typo = "cars_V1"
 server.has_collection?(typo)
-dne = server.get_collection(typo)
+server.get_collection(typo)
 
 begin
-  dne = server.get_collection!(typo)
+  server.get_collection!(typo)
 rescue
 end
 
