@@ -4,4 +4,3 @@ source "https://rubygems.org"
 
 # Specify your gem's dependencies in solr_cloud-connection.gemspec
 gemspec
-
